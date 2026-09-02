@@ -42,7 +42,10 @@ const AdminTeamEdit = () => {
     const isStreaming = Boolean(streamingJobId) && streamingJobStatus !== "SUCCEEDED";
     const [baselineTeams, setBaselineTeams] = useState(null);
     const [reviewPending, setReviewPending] = useState(false);
-    const [pendingVersionId, setPendingVersionId] = useState(null);
+    // 로딩 화면에서 첫 팀과 함께 전달받은 버전 ID를 먼저 사용한다.
+    // 폴링 응답보다 화면이 먼저 렌더링돼도 승인 대상이 비어 있지 않게 한다.
+    const [pendingVersionId, setPendingVersionId] =
+        useState(streamingVersionId);
     const [isChangesModalOpen, setIsChangesModalOpen] = useState(false);
     const [compareTab, setCompareTab] = useState("before");
     const [diffData, setDiffData] = useState(null);
@@ -196,6 +199,10 @@ const AdminTeamEdit = () => {
 
                 let currentJob = await requestTeamMatchingJob(streamingJobId);
 
+                if (currentJob?.versionId && !ignore) {
+                    setPendingVersionId(currentJob.versionId);
+                }
+
                 while (
                     !ignore &&
                     WAITING_JOB_STATUSES.includes(currentJob?.status)
@@ -221,12 +228,15 @@ const AdminTeamEdit = () => {
                 if (ignore) return;
 
                 if (currentJob?.status === "SUCCEEDED") {
-                    if (currentJob?.versionId) {
+                    const completedVersionId =
+                        currentJob?.versionId || streamingVersionId;
+
+                    if (completedVersionId) {
                         const finalTeams = await requestTeamMatchingVersionDetail(
-                            currentJob.versionId
+                            completedVersionId
                         );
                         if (!ignore) {
-                            setPendingVersionId(currentJob.versionId);
+                            setPendingVersionId(completedVersionId);
                             setReviewPending(Boolean(baseVersionId));
                             setIsLoading(false);
                         }
