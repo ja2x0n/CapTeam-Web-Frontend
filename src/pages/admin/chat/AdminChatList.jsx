@@ -1,36 +1,50 @@
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import Header from "../../../components/common/header/Header";
 import {
     requestAdminChannelSummaries,
-    requestAdminChatMessages,
     requestAdminChatRooms,
 } from "../../../api/adminChatApi";
 import { requestAdminTeamList } from "../../../api/teamApi";
 import { gradeLabels } from "../../../utils/matchingJobLock";
-import { formatChatTime } from "../../../utils/chat";
+import { formatChatTime, parseChatDate } from "../../../utils/chat";
+import useAdminChatListRealtime from "../../../hooks/useAdminChatListRealtime";
 import styles from "./AdminChatList.module.css";
 
 const GRADE_ORDER = ["GRADE_2", "GRADE_3"];
+const ROOM_REFRESH_DELAY = 150;
+
+const getMessageTimestamp = (message) =>
+    parseChatDate(message?.createdAt)?.getTime() ?? 0;
+
+const sortRoomsByLatestMessage = (roomList) => {
+    return [...roomList].sort(
+        (first, second) =>
+            getMessageTimestamp(second.lastMessage) -
+            getMessageTimestamp(first.lastMessage)
+    );
+};
 
 const getRoomPreview = async (room) => {
-    const firstChannel = room.channels?.[0];
-
-    if (!firstChannel) {
+    if (!room.id || !room.channels?.length) {
         return { lastMessage: null, unreadCount: 0 };
     }
 
-    const [messagePage, channelSummaries] = await Promise.all([
-        requestAdminChatMessages(firstChannel.id, { page: 0, size: 1 }).catch(
-            () => null
-        ),
-        requestAdminChannelSummaries(room.id).catch(() => []),
-    ]);
+    const channelSummaries = await requestAdminChannelSummaries(room.id);
+    const summaries = Array.isArray(channelSummaries) ? channelSummaries : [];
+    const lastMessage = summaries.reduce((latestMessage, summary) => {
+        const nextMessage = summary?.lastMessage;
 
-    const lastMessage =
-        (Array.isArray(messagePage?.content) && messagePage.content[0]) ||
-        null;
-    const unreadCount = (channelSummaries ?? []).reduce(
+        if (
+            getMessageTimestamp(nextMessage) >
+            getMessageTimestamp(latestMessage)
+        ) {
+            return nextMessage;
+        }
+
+        return latestMessage;
+    }, null);
+    const unreadCount = summaries.reduce(
         (total, summary) => total + Number(summary.unreadCount ?? 0),
         0
     );
@@ -45,58 +59,175 @@ const AdminChatList = () => {
     const [error, setError] = useState("");
     const [keyword, setKeyword] = useState("");
     const [activeGrade, setActiveGrade] = useState("");
+    const loadSequenceRef = useRef(0);
+    const roomRefreshSequenceRef = useRef(new Map());
+    const roomRefreshTimersRef = useRef(new Map());
 
-    useEffect(() => {
-        const getRooms = async () => {
-            try {
+    const loadRooms = useCallback(async ({ showLoading = false } = {}) => {
+        const loadSequence = loadSequenceRef.current + 1;
+        loadSequenceRef.current = loadSequence;
+
+        try {
+            if (showLoading) {
                 setIsLoading(true);
-                setError("");
+            }
+            setError("");
 
-                const [roomList, teamList] = await Promise.all([
-                    requestAdminChatRooms(),
-                    requestAdminTeamList().catch(() => []),
-                ]);
+            const [roomList, teamList] = await Promise.all([
+                requestAdminChatRooms(),
+                requestAdminTeamList().catch(() => []),
+            ]);
 
-                const normalizedRooms = Array.isArray(roomList)
-                    ? roomList
-                    : [];
-                const teamsByName = new Map(
-                    (Array.isArray(teamList) ? teamList : []).map((team) => [
-                        team.teamName,
-                        team,
-                    ])
+            if (loadSequence !== loadSequenceRef.current) return;
+
+            const normalizedRooms = Array.isArray(roomList) ? roomList : [];
+            const teamsById = new Map(
+                (Array.isArray(teamList) ? teamList : []).map((team) => [
+                    String(team.teamId),
+                    team,
+                ])
+            );
+
+            const joinedRooms = await Promise.all(
+                normalizedRooms.map(async (room) => {
+                    const team = teamsById.get(String(room.teamId));
+                    const { lastMessage, unreadCount } =
+                        await getRoomPreview(room).catch(() => ({
+                            lastMessage: null,
+                            unreadCount: 0,
+                        }));
+
+                    return {
+                        ...room,
+                        grade: team?.grade ?? "",
+                        memberCount: team?.members?.length ?? 0,
+                        lastMessage,
+                        unreadCount,
+                    };
+                })
+            );
+
+            if (loadSequence !== loadSequenceRef.current) return;
+
+            const sortedRooms = sortRoomsByLatestMessage(joinedRooms);
+            setRooms(sortedRooms);
+
+            setActiveGrade((currentGrade) => {
+                if (
+                    currentGrade &&
+                    sortedRooms.some((room) => room.grade === currentGrade)
+                ) {
+                    return currentGrade;
+                }
+
+                return (
+                    GRADE_ORDER.find((grade) =>
+                        sortedRooms.some((room) => room.grade === grade)
+                    ) ?? ""
                 );
-
-                const joinedRooms = await Promise.all(
-                    normalizedRooms.map(async (room) => {
-                        const team = teamsByName.get(room.teamName);
-                        const { lastMessage, unreadCount } =
-                            await getRoomPreview(room);
-
-                        return {
-                            ...room,
-                            grade: team?.grade ?? "",
-                            memberCount: team?.members?.length ?? 0,
-                            lastMessage,
-                            unreadCount,
-                        };
-                    })
-                );
-
-                setRooms(joinedRooms);
-
-                const firstGrade = GRADE_ORDER.find((grade) =>
-                    joinedRooms.some((room) => room.grade === grade)
-                );
-                setActiveGrade(firstGrade ?? "");
-            } catch {
+            });
+        } catch {
+            if (loadSequence === loadSequenceRef.current) {
                 setError("채팅방 목록을 불러오지 못했습니다.");
-            } finally {
+            }
+        } finally {
+            if (loadSequence === loadSequenceRef.current) {
                 setIsLoading(false);
             }
+        }
+    }, []);
+
+    const refreshRoomPreview = useCallback(async (roomId) => {
+        const roomKey = String(roomId);
+        const refreshSequence =
+            (roomRefreshSequenceRef.current.get(roomKey) ?? 0) + 1;
+        roomRefreshSequenceRef.current.set(roomKey, refreshSequence);
+
+        try {
+            const room = rooms.find(
+                (candidate) => String(candidate.id) === roomKey
+            );
+
+            if (!room) return;
+
+            const preview = await getRoomPreview(room);
+
+            if (
+                roomRefreshSequenceRef.current.get(roomKey) !==
+                refreshSequence
+            ) {
+                return;
+            }
+
+            setRooms((currentRooms) =>
+                sortRoomsByLatestMessage(
+                    currentRooms.map((currentRoom) =>
+                        String(currentRoom.id) === roomKey
+                            ? { ...currentRoom, ...preview }
+                            : currentRoom
+                    )
+                )
+            );
+        } catch {
+            // 일시적인 갱신 실패 시 현재 목록을 유지하고 다음 이벤트나 focus 재조회를 기다린다.
+        }
+    }, [rooms]);
+
+    const scheduleRoomRefresh = useCallback(
+        (roomId) => {
+            const roomKey = String(roomId);
+            const previousTimer = roomRefreshTimersRef.current.get(roomKey);
+
+            if (previousTimer) {
+                window.clearTimeout(previousTimer);
+            }
+
+            const timerId = window.setTimeout(() => {
+                roomRefreshTimersRef.current.delete(roomKey);
+                refreshRoomPreview(roomKey);
+            }, ROOM_REFRESH_DELAY);
+
+            roomRefreshTimersRef.current.set(roomKey, timerId);
+        },
+        [refreshRoomPreview]
+    );
+
+    const refreshAllRooms = useCallback(() => {
+        loadRooms();
+    }, [loadRooms]);
+
+    useAdminChatListRealtime({
+        rooms,
+        onRoomChanged: scheduleRoomRefresh,
+        onRoomsChanged: refreshAllRooms,
+        onReconnect: refreshAllRooms,
+    });
+
+    useEffect(() => {
+        loadRooms({ showLoading: true });
+    }, [loadRooms]);
+
+    useEffect(() => {
+        const refreshOnFocus = () => {
+            loadRooms();
         };
 
-        getRooms();
+        window.addEventListener("focus", refreshOnFocus);
+
+        return () => {
+            window.removeEventListener("focus", refreshOnFocus);
+        };
+    }, [loadRooms]);
+
+    useEffect(() => {
+        const refreshTimers = roomRefreshTimersRef.current;
+
+        return () => {
+            refreshTimers.forEach((timerId) => {
+                window.clearTimeout(timerId);
+            });
+            refreshTimers.clear();
+        };
     }, []);
 
     const gradeTabs = useMemo(
