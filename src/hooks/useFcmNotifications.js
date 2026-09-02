@@ -49,14 +49,33 @@ const useFcmNotifications = () => {
     }, [authStatus]);
 
     useEffect(() => {
-        const unsubscribe = onForegroundFcmMessage((payload) => {
+        let isActive = true;
+        let unsubscribe = () => {};
+
+        onForegroundFcmMessage((payload) => {
+            if (!isActive) return;
+
             setToasts((prev) => [
                 ...prev,
-                { id: `${payload.type}-${Date.now()}`, ...payload },
+                { id: `${payload.type ?? "FCM"}-${Date.now()}`, ...payload },
             ]);
-        });
+        })
+            .then((cleanup) => {
+                if (!isActive) {
+                    cleanup();
+                    return;
+                }
 
-        return unsubscribe;
+                unsubscribe = cleanup;
+            })
+            .catch((error) => {
+                console.error("FCM 메시지 구독에 실패했습니다.", error);
+            });
+
+        return () => {
+            isActive = false;
+            unsubscribe();
+        };
     }, []);
 
     useEffect(() => {
