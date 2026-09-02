@@ -1,6 +1,15 @@
 import styles from "./AdminTeamDetailModal.module.css";
 
+const MANUAL_TEAM_DESCRIPTION = "관리자가 직접 구성한 팀입니다.";
+
 const AdminTeamInsightPanel = ({ strength, weakness }) => {
+    const isManualTeam = strength === MANUAL_TEAM_DESCRIPTION;
+    const weaknessDescription =
+        weakness ||
+        (isManualTeam
+            ? MANUAL_TEAM_DESCRIPTION
+            : "아직 팀 약점 정보를 받아오지 못했습니다.");
+
     return (
         <section className={styles.insightPanel}>
             <div className={styles.sectionHeader}>
@@ -17,10 +26,7 @@ const AdminTeamInsightPanel = ({ strength, weakness }) => {
                 </article>
                 <article className={styles.insightCard}>
                     <strong>약점</strong>
-                    <p>
-                        {weakness ||
-                            "아직 팀 약점 정보를 받아오지 못했습니다."}
-                    </p>
+                    <p>{weaknessDescription}</p>
                 </article>
             </div>
         </section>
