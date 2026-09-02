@@ -469,4 +469,25 @@
     .messageItem {
         max-width: 100%;
     }
+
+    .messageBubble {
+        padding: 9px 13px;
+    }
+
+    .inlineEditBox {
+        width: min(280px, calc(100vw - 64px));
+        min-width: 0;
+    }
+
+    .deleteOverlay,
+    .imagePreviewOverlay {
+        padding: 16px;
+    }
+}
+
+@media (hover: none) and (pointer: coarse) {
+    .messageActions {
+        visibility: visible;
+        opacity: 1;
+    }
 }

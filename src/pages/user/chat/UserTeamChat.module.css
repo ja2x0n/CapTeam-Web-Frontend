@@ -1,5 +1,6 @@
 .page {
     height: 100vh;
+    height: 100dvh;
     overflow: hidden;
     background-color: var(--color-bg);
     display: flex;
@@ -9,6 +10,7 @@
 .panel {
     flex: 1;
     min-height: 0;
+    overflow: hidden;
 }
 
 .chatLayout {
@@ -496,9 +498,72 @@
 }
 
 @media (max-width: 820px) {
+    .chatLayout {
+        flex-direction: column;
+    }
+
     .sidebar {
-        width: 200px;
-        padding: 20px 14px;
+        width: 100%;
+        min-height: 0;
+        padding: 12px 16px;
+        flex-direction: row;
+        align-items: center;
+        gap: 16px;
+        border-right: 0;
+        border-bottom: 1px solid var(--color-border);
+    }
+
+    .sidebarHeader {
+        min-width: 0;
+        max-width: 34%;
+        flex: 0 1 auto;
+    }
+
+    .sidebarHeader h1 {
+        overflow: hidden;
+        font-size: var(--font-size-md);
+        text-overflow: ellipsis;
+        white-space: nowrap;
+    }
+
+    .sidebarHeader p {
+        display: none;
+    }
+
+    .channelArea {
+        min-width: 0;
+        margin-top: 0;
+        flex-direction: row;
+        align-items: center;
+        gap: 8px;
+    }
+
+    .sectionTitle {
+        flex: 0 0 auto;
+        margin-bottom: 0;
+    }
+
+    .sectionTitle > span {
+        display: none;
+    }
+
+    .addChannelButton {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        width: 32px;
+        height: 32px;
+        border-radius: 50%;
+        background-color: var(--color-primary-bg);
+    }
+
+    .channelList {
+        min-width: 0;
+        flex-direction: row;
+        gap: 6px;
+        overflow-x: auto;
+        overflow-y: hidden;
+        scrollbar-width: thin;
     }
 
     .chatHeader,
@@ -510,6 +575,39 @@
 
 @media (max-width: 560px) {
     .sidebar {
+        padding: 10px 16px;
+        gap: 10px;
+    }
+
+    .sidebarHeader {
+        max-width: 30%;
+    }
+
+    .chatHeader,
+    .messageList {
+        padding-left: 16px;
+        padding-right: 16px;
+    }
+
+    .pinnedBar {
+        gap: 8px;
+        padding-right: 16px;
+    }
+
+    .pinnedBarBody {
+        gap: 7px;
+        padding-left: 13px;
+    }
+
+    .pinnedBarLabel {
         display: none;
+    }
+
+    .modalOverlay {
+        padding: 16px;
+    }
+
+    .channelModal {
+        padding: 22px 18px;
     }
 }

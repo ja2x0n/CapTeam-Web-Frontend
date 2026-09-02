@@ -92,3 +92,31 @@
 .channelActions button:last-child:hover {
     color: var(--color-danger-dark);
 }
+
+@media (max-width: 820px) {
+    .channelRow {
+        flex: 0 0 auto;
+        min-width: 108px;
+        border-bottom: 3px solid transparent;
+        border-left: 0;
+    }
+
+    .channelRow.selected {
+        border-bottom-color: var(--color-primary);
+        border-left-color: transparent;
+    }
+
+    .channelButton {
+        min-height: 34px;
+        padding: 8px 10px;
+    }
+}
+
+@media (hover: none) and (pointer: coarse) {
+    .channelActions {
+        position: static;
+        padding-right: 5px;
+        visibility: visible;
+        opacity: 1;
+    }
+}
