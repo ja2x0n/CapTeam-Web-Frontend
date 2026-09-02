@@ -513,13 +513,6 @@ const AdminTeamEdit = () => {
                         </div>
                     </div>
 
-                    {isStreaming && (
-                        <p className={styles.messageText}>
-                            팀이 생성되는 대로 이 화면에 순서대로 나타납니다
-                            (현재 {teams.length}팀 도착) — 완료되면 수정할 수
-                            있습니다.
-                        </p>
-                    )}
                     {message && <p className={styles.messageText}>{message}</p>}
                     {error && <p className={styles.messageText}>{error}</p>}
 
