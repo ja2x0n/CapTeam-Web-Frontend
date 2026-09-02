@@ -4,7 +4,6 @@ import Header from "../../../components/common/header/Header";
 import TeamEditCard from "../../../components/admin/team/TeamEditCard";
 import {
     requestApplyTeamMatchingVersion,
-    requestDiscardTeamMatchingVersion,
     requestSwapTeamMembers,
     requestTeamMatchingJob,
     requestLatestTeamMatchingVersion,
@@ -51,7 +50,6 @@ const AdminTeamEdit = () => {
     const [diffData, setDiffData] = useState(null);
     const [isDiffLoading, setIsDiffLoading] = useState(false);
     const [diffError, setDiffError] = useState(false);
-    const isLocked = isStreaming || reviewPending;
     const [selectedMember, setSelectedMember] = useState(null);
     const [highlightedUserIds, setHighlightedUserIds] = useState([]);
     const [flippedTeamIds, setFlippedTeamIds] = useState([]);
@@ -403,38 +401,6 @@ const AdminTeamEdit = () => {
 
     const closeChangesModal = () => setIsChangesModalOpen(false);
 
-    const handleApplyChanges = async () => {
-        if (!pendingVersionId) return;
-
-        try {
-            await requestApplyTeamMatchingVersion(pendingVersionId);
-            setReviewPending(false);
-            setBaselineTeams(null);
-            setPendingVersionId(null);
-            setDiffData(null);
-            setIsChangesModalOpen(false);
-            setMessage("재생성 결과가 적용되었습니다.");
-        } catch {
-            setMessage("결과 적용에 실패했습니다.");
-        }
-    };
-
-    const handleDiscardChanges = async () => {
-        if (!pendingVersionId) return;
-
-        try {
-            await requestDiscardTeamMatchingVersion(pendingVersionId);
-            setTeams(baselineTeams || []);
-            setReviewPending(false);
-            setBaselineTeams(null);
-            setPendingVersionId(null);
-            setDiffData(null);
-            setIsChangesModalOpen(false);
-            setMessage("재생성을 취소했습니다. 기존 팀 배정이 유지됩니다.");
-        } catch {
-            setMessage("취소 처리에 실패했습니다.");
-        }
-    };
     const handleApprove = async () => {
         if (!pendingVersionId) {
             setMessage("적용할 팀 추천 버전이 없습니다.");
@@ -508,7 +474,7 @@ const AdminTeamEdit = () => {
                                 type="button"
                                 className={styles.secondaryButton}
                                 onClick={handleRegenerate}
-                                disabled={isLocked}
+                                disabled={isStreaming || reviewPending}
                             >
                                 재생성
                             </button>
@@ -516,7 +482,7 @@ const AdminTeamEdit = () => {
                                 type="button"
                                 className={styles.primaryButton}
                                 onClick={handleApprove}
-                                disabled={isLocked}
+                                disabled={isStreaming}
                             >
                                 팀 구성 승인
                             </button>
@@ -872,22 +838,6 @@ const AdminTeamEdit = () => {
                             )}
                         </div>
 
-                        <div className={styles.modalActionArea}>
-                            <button
-                                type="button"
-                                className={styles.modalCancelButton}
-                                onClick={handleDiscardChanges}
-                            >
-                                취소
-                            </button>
-                            <button
-                                type="button"
-                                className={styles.modalConfirmButton}
-                                onClick={handleApplyChanges}
-                            >
-                                새 결과 적용
-                            </button>
-                        </div>
                     </section>
                 </div>
             )}
