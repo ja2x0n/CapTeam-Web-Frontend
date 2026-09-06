@@ -8,11 +8,9 @@ import {
 import styles from "../../../pages/user/chat/UserTeamChat.module.css";
 
 const ChatMessageList = ({
-    messageListRef,
     messages = [],
     currentUserId,
     isLoadingMoreMessages,
-    onScroll,
     onEditMessage,
     onDeleteMessage,
     pinnedMessageId,
@@ -21,9 +19,7 @@ const ChatMessageList = ({
 }) => {
     return (
         <ul
-            ref={messageListRef}
             className={styles.messageList}
-            onScroll={onScroll}
         >
             {isLoadingMoreMessages && (
                 <li className={styles.olderLoadingText}>

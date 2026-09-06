@@ -1,131 +1,128 @@
 .inputForm {
-    display: flex;
-    flex-direction: column;
-    align-items: stretch;
     flex-shrink: 0;
-    gap: 10px;
-    padding: 16px 32px 20px;
+    padding: 16px 24px;
     border-top: 1px solid var(--color-border);
+    background-color: var(--color-bg);
 }
 
-.inputRow {
-    display: flex;
-    align-items: center;
-    gap: 10px;
-    min-height: 42px;
+.errorText {
+    margin-bottom: 8px;
+    font-size: var(--font-size-sm);
+    font-weight: var(--font-weight-semibold);
+    color: var(--color-danger);
 }
+
+/* ── 첨부 미리보기 ───────────────────────────────── */
 
 .filePreview {
-    position: relative;
-    display: grid;
-    grid-template-columns: 86px minmax(0, 1fr) 28px;
+    display: flex;
     align-items: center;
     gap: 12px;
-    padding: 10px;
-    border: 1px solid var(--color-border);
-    border-radius: 10px;
-}
-
-.imagePreview,
-.documentPreview {
-    width: 86px;
-    height: 64px;
-    border-radius: 8px;
+    margin-bottom: 8px;
+    padding: 10px 12px;
+    border-radius: 12px;
+    background-color: var(--color-bg-secondary);
 }
 
 .imagePreview {
+    width: 40px;
+    height: 40px;
+    border-radius: 8px;
     object-fit: cover;
-    background-color: var(--color-bubble);
 }
 
 .documentPreview {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    background-color: var(--color-bubble);
-}
-
-.documentIcon {
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    width: 44px;
-    height: 44px;
-    border-radius: 10px;
-    background-color: #ffffff;
+    display: grid;
+    place-items: center;
+    width: 40px;
+    height: 40px;
+    border-radius: 8px;
+    background-color: var(--color-bg);
 }
 
 .documentIcon img {
-    width: 24px;
-    height: 24px;
-    object-fit: contain;
+    width: 20px;
+    height: 20px;
 }
 
 .previewInfo {
-    display: flex;
-    flex-direction: column;
     min-width: 0;
-    gap: 5px;
+    flex: 1;
 }
 
 .previewInfo strong {
+    display: block;
     overflow: hidden;
-    color: var(--color-text-primary);
-    font-size: var(--font-size-sm);
-    font-weight: var(--font-weight-bold);
+    font-size: var(--font-size-md);
+    font-weight: var(--font-weight-semibold);
     text-overflow: ellipsis;
     white-space: nowrap;
 }
 
 .previewInfo span {
+    display: block;
+    margin-top: 2px;
+    font-size: var(--font-size-sm);
     color: var(--color-text-muted);
-    font-size: var(--font-size-xs);
-    font-weight: var(--font-weight-semibold);
 }
 
 .removeFileButton {
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    width: 26px;
-    height: 26px;
-    border: 0;
-    border-radius: 50%;
-    background-color: var(--color-bubble);
+    display: grid;
+    place-items: center;
+    flex-shrink: 0;
+    width: 28px;
+    height: 28px;
+    border: none;
+    border-radius: 8px;
+    background: none;
+    font-size: 16px;
     color: var(--color-text-muted);
-    font-family: var(--font-family);
-    font-size: var(--font-size-lg);
-    font-weight: var(--font-weight-bold);
-    cursor: pointer;
+    transition: background-color 0.15s ease, color 0.15s ease;
 }
 
 .removeFileButton:hover {
+    background-color: var(--color-border);
     color: var(--color-text-primary);
 }
 
+/* ── 입력 줄 ─────────────────────────────────────── */
+
+.inputRow {
+    display: flex;
+    align-items: flex-end;
+    gap: 8px;
+    padding: 8px 12px;
+    border: 1px solid var(--color-border);
+    border-radius: var(--border-radius-lg);
+    transition: border-color 0.15s ease;
+}
+
+.inputRow:focus-within {
+    border-color: var(--color-primary);
+}
+
 .fileButton {
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
+    display: grid;
+    place-items: center;
     flex-shrink: 0;
     width: 36px;
     height: 36px;
-    border: 0;
-    border-radius: 50%;
-    background-color: var(--color-bubble);
-    color: var(--color-text-secondary);
-    font-size: var(--font-size-xl);
-    font-weight: var(--font-weight-bold);
-    cursor: pointer;
+    border: none;
+    border-radius: 8px;
+    background: none;
+    font-size: 20px;
+    line-height: 1;
+    color: var(--color-text-muted);
+    transition: background-color 0.15s ease;
 }
 
-.fileButton:hover {
-    color: var(--color-primary-dark);
+.fileButton:hover:not(:disabled) {
+    background-color: var(--color-bg-secondary);
 }
 
 .fileButton:disabled {
+    opacity: 0.4;
     cursor: not-allowed;
-    opacity: 0.55;
 }
 
 .fileInput {
@@ -134,100 +131,58 @@
 
 .messageInput {
     flex: 1;
-    height: 42px;
+    min-width: 0;
+    min-height: 36px;
+    max-height: 128px;
+    padding: 7px 0;
     border: none;
-    border-bottom: 1px solid var(--color-border);
-    background-color: transparent;
-    color: var(--color-text-primary);
+    background: none;
     font-family: var(--font-family);
-    font-size: var(--font-size-md);
-    font-weight: var(--font-weight-medium);
-}
-
-.messageInput:focus {
-    border-bottom-color: var(--color-primary);
-    outline: none;
+    font-size: var(--font-size-lg);
+    line-height: 1.6;
+    color: var(--color-text-primary);
+    resize: none !important;
+    overflow-y: auto;
 }
 
 .messageInput::placeholder {
     color: var(--color-text-muted);
-    font-weight: var(--font-weight-medium);
 }
 
-.sendButton {
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    flex-shrink: 0;
-    min-width: 64px;
-    height: 40px;
-    padding: 0 16px;
-    border: 0;
-    border-radius: 10px;
-    background-color: var(--color-primary);
-    color: #ffffff;
-    font-family: var(--font-family);
-    font-size: var(--font-size-sm);
-    font-weight: var(--font-weight-bold);
-    cursor: pointer;
-}
-
-.sendButton:hover {
-    background-color: var(--color-primary-dark);
-}
-
-.sendButton:disabled {
-    background-color: var(--color-text-muted);
-    color: #ffffff;
+.messageInput:disabled {
     cursor: not-allowed;
 }
 
-.errorText {
-    margin: 0;
-    color: var(--color-danger);
-    font-size: var(--font-size-xs);
+.sendButton {
+    flex-shrink: 0;
+    height: 36px;
+    padding: 0 16px;
+    border: none;
+    border-radius: 8px;
+    background-color: var(--color-primary);
+    font-family: var(--font-family);
+    font-size: 15px;
     font-weight: var(--font-weight-semibold);
+    color: #ffffff;
+    transition: background-color 0.15s ease, transform 0.1s ease;
 }
 
-@media (max-width: 560px) {
+.sendButton:hover:not(:disabled) {
+    background-color: var(--color-primary-dark);
+}
+
+.sendButton:active:not(:disabled) {
+    transform: scale(0.97);
+}
+
+.sendButton:disabled {
+    background-color: var(--color-border);
+    color: var(--color-text-muted);
+    cursor: not-allowed;
+}
+
+@media (max-width: 900px) {
     .inputForm {
-        gap: 8px;
-        padding: 12px 16px 14px;
-    }
-
-    .inputRow {
-        gap: 8px;
-    }
-
-    .filePreview {
-        grid-template-columns: 56px minmax(0, 1fr) 26px;
-        gap: 9px;
-        padding: 8px;
-    }
-
-    .imagePreview,
-    .documentPreview {
-        width: 56px;
-        height: 48px;
-    }
-
-    .documentIcon {
-        width: 36px;
-        height: 36px;
-    }
-
-    .fileButton {
-        width: 34px;
-        height: 34px;
-    }
-
-    .messageInput {
-        min-width: 0;
-        font-size: var(--font-size-sm);
-    }
-
-    .sendButton {
-        min-width: 52px;
-        padding: 0 12px;
+        padding: 12px 16px;
     }
 }

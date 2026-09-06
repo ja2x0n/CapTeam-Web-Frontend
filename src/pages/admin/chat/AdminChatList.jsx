@@ -9,6 +9,9 @@ import { requestAdminTeamList } from "../../../api/teamApi";
 import { gradeLabels } from "../../../utils/matchingJobLock";
 import { formatChatTime, parseChatDate } from "../../../utils/chat";
 import useAdminChatListRealtime from "../../../hooks/useAdminChatListRealtime";
+import Skeleton from "../../../components/common/skeleton/Skeleton";
+import EmptyState from "../../../components/common/empty/EmptyState";
+import useInView from "../../../hooks/useInView";
 import styles from "./AdminChatList.module.css";
 
 const GRADE_ORDER = ["GRADE_2", "GRADE_3"];
@@ -247,29 +250,57 @@ const AdminChatList = () => {
         return matchesGrade && matchesKeyword;
     });
 
+    const totalUnread = rooms.reduce(
+        (sum, room) => sum + (room.unreadCount || 0),
+        0
+    );
+    const listRef = useInView({
+        replayKey: `${isLoading}-${activeGrade}-${keyword}`,
+    });
+
     return (
         <div className={styles.page}>
             <Header />
 
-            <main className={styles.content}>
-                <h1 className={styles.title}>채팅 관리</h1>
-                <p className={styles.subtitle}>
-                    팀을 선택하면 채팅방으로 이동합니다.
-                </p>
+            <main className={styles.body}>
+                <section className={styles.pageHead}>
+                    <div>
+                        <p className={styles.eyebrow}>채팅 관리</p>
+                        <h1 className={styles.headline}>
+                            팀별 대화를
+                            <br />
+                            확인할 수 있어요
+                        </h1>
+                        <p className={styles.subline}>
+                            팀을 누르면 그 팀의 채팅방으로 이동해요.
+                        </p>
+                    </div>
 
-                <div className={styles.controlRow}>
+                    {!isLoading && rooms.length > 0 && (
+                        <div className={styles.statusPanel}>
+                            <p className={styles.statusLabel}>안 읽은 메시지</p>
+                            <p className={styles.statusValue}>
+                                {totalUnread}
+                                <span>개</span>
+                            </p>
+                        </div>
+                    )}
+                </section>
+
+                <div className={styles.controls}>
                     {gradeTabs.length > 0 && (
-                        <div className={styles.gradeTabs}>
+                        <div className={styles.segments}>
                             {gradeTabs.map((grade) => (
                                 <button
                                     key={grade}
                                     type="button"
-                                    className={`${styles.gradeTab} ${
+                                    className={`${styles.segment} ${
                                         activeGrade === grade
-                                            ? styles.activeGradeTab
+                                            ? styles.segmentOn
                                             : ""
                                     }`}
                                     onClick={() => setActiveGrade(grade)}
+                                    aria-pressed={activeGrade === grade}
                                 >
                                     {gradeLabels[grade] ?? grade}
                                 </button>
@@ -277,45 +308,82 @@ const AdminChatList = () => {
                         </div>
                     )}
 
-                    <input
-                        type="text"
-                        className={styles.search}
-                        placeholder="팀명을 검색하세요"
-                        value={keyword}
-                        onChange={(event) => setKeyword(event.target.value)}
-                    />
+                    <div className={styles.searchBox}>
+                        <svg
+                            className={styles.searchIcon}
+                            width="18"
+                            height="18"
+                            viewBox="0 0 24 24"
+                            fill="none"
+                            stroke="currentColor"
+                            strokeWidth="1.9"
+                            strokeLinecap="round"
+                            aria-hidden="true"
+                        >
+                            <circle cx="11" cy="11" r="7" />
+                            <path d="m20 20-3.5-3.5" />
+                        </svg>
+                        <input
+                            type="text"
+                            className={styles.search}
+                            placeholder="팀명을 검색하세요"
+                            value={keyword}
+                            onChange={(event) => setKeyword(event.target.value)}
+                        />
+                    </div>
                 </div>
 
-                {error && <p className={styles.errorText}>{error}</p>}
-
-                <div className={styles.chatList}>
-                    {isLoading && (
-                        <p className={styles.emptyText}>
-                            채팅방 목록을 불러오는 중입니다.
-                        </p>
-                    )}
-
-                    {!isLoading && visibleRooms.length === 0 && (
-                        <p className={styles.emptyText}>
-                            {keyword
-                                ? "검색 결과가 없습니다."
-                                : "채팅방이 없습니다."}
-                        </p>
-                    )}
-
-                    {!isLoading &&
-                        visibleRooms.map((room) => (
+                {isLoading ? (
+                    <div className={styles.list}>
+                        {[0, 1, 2].map((index) => (
+                            <div key={index} className={styles.skeletonRow}>
+                                <Skeleton width={208} height={24} />
+                                <Skeleton
+                                    width={320}
+                                    height={20}
+                                    style={{ marginTop: 12 }}
+                                />
+                            </div>
+                        ))}
+                    </div>
+                ) : error ? (
+                    <EmptyState
+                        variant="error"
+                        title="채팅방 목록을 불러오지 못했어요"
+                        description={error}
+                    />
+                ) : visibleRooms.length === 0 ? (
+                    <EmptyState
+                        title="조건에 맞는 채팅방이 없어요"
+                        description="검색어를 지우거나 다른 학년을 골라보세요."
+                        action={
+                            <button
+                                type="button"
+                                className={styles.resetButton}
+                                onClick={() => {
+                                    setKeyword("");
+                                    setActiveGrade("");
+                                }}
+                            >
+                                필터 초기화
+                            </button>
+                        }
+                    />
+                ) : (
+                    <div className={styles.list} ref={listRef}>
+                        {visibleRooms.map((room) => (
                             <button
                                 key={room.id}
                                 type="button"
-                                className={styles.chatRow}
+                                data-reveal
+                                className={styles.row}
                                 onClick={() =>
                                     navigate(`/admin/chat/${room.id}`)
                                 }
                             >
-                                <div className={styles.chatMain}>
-                                    <div className={styles.chatTitleRow}>
-                                        <span className={styles.chatTeam}>
+                                <span className={styles.rowMain}>
+                                    <span className={styles.rowTitleLine}>
+                                        <span className={styles.rowTeam}>
                                             {room.teamName}
                                         </span>
                                         {room.grade && (
@@ -329,16 +397,17 @@ const AdminChatList = () => {
                                         {room.unreadCount > 0 && (
                                             <span
                                                 className={styles.unreadDot}
+                                                aria-label="읽지 않은 메시지"
                                             />
                                         )}
-                                    </div>
+                                    </span>
 
-                                    <p
-                                        className={`${styles.chatPreview} ${
+                                    <span
+                                        className={
                                             room.lastMessage
-                                                ? ""
-                                                : styles.emptyPreview
-                                        }`}
+                                                ? styles.rowPreview
+                                                : styles.rowPreviewEmpty
+                                        }
                                     >
                                         {room.lastMessage ? (
                                             <>
@@ -353,26 +422,27 @@ const AdminChatList = () => {
                                                     "파일을 보냈습니다."}
                                             </>
                                         ) : (
-                                            "아직 대화가 없습니다."
+                                            "아직 대화가 없어요."
                                         )}
-                                    </p>
-                                </div>
+                                    </span>
+                                </span>
 
-                                <div className={styles.chatMeta}>
+                                <span className={styles.rowMeta}>
                                     {room.lastMessage && (
-                                        <div className={styles.chatTime}>
+                                        <span className={styles.rowTime}>
                                             {formatChatTime(
                                                 room.lastMessage.createdAt
                                             )}
-                                        </div>
+                                        </span>
                                     )}
-                                    <div className={styles.chatMembers}>
+                                    <span className={styles.rowMembers}>
                                         팀원 {room.memberCount}명
-                                    </div>
-                                </div>
+                                    </span>
+                                </span>
                             </button>
                         ))}
-                </div>
+                    </div>
+                )}
             </main>
         </div>
     );

@@ -1,122 +1,86 @@
 .channelRow {
-    position: relative;
     display: flex;
     align-items: center;
-    border-left: 3px solid transparent;
-    border-radius: 6px;
-    color: var(--color-text-secondary);
+    gap: 4px;
+    border-radius: 8px;
+    transition: background-color 0.15s ease;
 }
 
 .channelRow:hover {
-    color: var(--color-text-primary);
+    background-color: var(--color-bg-secondary);
 }
 
-.channelRow.selected {
-    border-left-color: var(--color-primary);
-    color: var(--color-primary-dark);
+.selected {
+    background-color: var(--color-primary-bg);
 }
 
 .channelButton {
     display: flex;
     align-items: center;
-    width: 100%;
+    justify-content: space-between;
     gap: 8px;
-    min-height: 36px;
-    padding: 10px 10px 10px 12px;
-    border: 0;
-    background-color: transparent;
-    color: inherit;
+    flex: 1;
+    min-width: 0;
+    padding: 9px 12px;
+    border: none;
+    background: none;
     font-family: var(--font-family);
-    font-size: var(--font-size-md);
-    font-weight: var(--font-weight-semibold);
     text-align: left;
-    cursor: pointer;
+    color: var(--color-text-secondary);
+}
+
+.selected .channelButton {
+    color: var(--color-primary-text);
 }
 
 .channelName {
-    flex: 1;
     overflow: hidden;
+    font-size: 15px;
+    font-weight: var(--font-weight-medium);
     text-overflow: ellipsis;
     white-space: nowrap;
 }
 
+.selected .channelName {
+    font-weight: var(--font-weight-bold);
+}
+
 .unreadBadge {
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
     flex-shrink: 0;
-    min-width: 18px;
-    height: 18px;
-    padding: 0 5px;
+    min-width: 20px;
+    padding: 2px 6px;
     border-radius: 999px;
-    background-color: var(--color-danger);
-    color: #ffffff;
+    background-color: var(--color-primary);
     font-size: var(--font-size-xs);
     font-weight: var(--font-weight-bold);
-    line-height: 1;
+    color: #ffffff;
+    text-align: center;
 }
 
 .channelActions {
-    position: absolute;
-    right: 6px;
-    display: inline-flex;
-    align-items: center;
-    gap: 4px;
-    opacity: 0;
-    visibility: hidden;
-    transition: opacity var(--transition);
+    display: none;
+    gap: 2px;
+    padding-right: 8px;
 }
 
-.channelRow:hover .channelActions {
-    opacity: 1;
-    visibility: visible;
+.channelRow:hover .channelActions,
+.channelRow:focus-within .channelActions {
+    display: flex;
 }
 
 .channelActions button {
-    height: 24px;
-    padding: 0 6px;
-    border: 0;
-    border-radius: 4px;
-    background-color: #ffffff;
-    color: var(--color-text-secondary);
+    padding: 4px 6px;
+    border: none;
+    border-radius: var(--border-radius-sm);
+    background: none;
     font-family: var(--font-family);
     font-size: var(--font-size-xs);
-    font-weight: var(--font-weight-bold);
-    cursor: pointer;
+    font-weight: var(--font-weight-semibold);
+    color: var(--color-text-muted);
+    transition: background-color 0.15s ease, color 0.15s ease;
 }
 
 .channelActions button:hover {
+    background-color: var(--color-border);
     color: var(--color-text-primary);
-}
-
-.channelActions button:last-child:hover {
-    color: var(--color-danger-dark);
-}
-
-@media (max-width: 820px) {
-    .channelRow {
-        flex: 0 0 auto;
-        min-width: 108px;
-        border-bottom: 3px solid transparent;
-        border-left: 0;
-    }
-
-    .channelRow.selected {
-        border-bottom-color: var(--color-primary);
-        border-left-color: transparent;
-    }
-
-    .channelButton {
-        min-height: 34px;
-        padding: 8px 10px;
-    }
-}
-
-@media (hover: none) and (pointer: coarse) {
-    .channelActions {
-        position: static;
-        padding-right: 5px;
-        visibility: visible;
-        opacity: 1;
-    }
 }

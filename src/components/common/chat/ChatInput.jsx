@@ -1,4 +1,4 @@
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import fileIcon from "../../../assets/icons/file.svg";
 import { getApiErrorMessage } from "../../../utils/apiError";
 import styles from "./ChatInput.module.css";
@@ -45,6 +45,15 @@ const ChatInput = ({
     const [fileError, setFileError] = useState("");
     const inputRef = useRef(null);
     const fileInputRef = useRef(null);
+
+    // 입력 줄 수에 맞춰 높이를 늘린다 (CSS max-height까지)
+    useEffect(() => {
+        const textarea = inputRef.current;
+        if (!textarea) return;
+
+        textarea.style.height = "auto";
+        textarea.style.height = `${textarea.scrollHeight}px`;
+    }, [message]);
 
     const clearSelectedFile = () => {
         if (previewUrl) {
@@ -187,14 +196,22 @@ const ChatInput = ({
                     onChange={handleFileChange}
                 />
 
-                <input
+                <textarea
                     ref={inputRef}
-                    type="text"
+                    rows={1}
                     className={styles.messageInput}
                     placeholder={placeholder}
                     value={message}
                     disabled={disabled || isSending || isFileSending}
                     onChange={(event) => setMessage(event.target.value)}
+                    onKeyDown={(event) => {
+                        // Enter는 전송, Shift+Enter는 줄바꿈
+                        if (event.key !== "Enter" || event.shiftKey) return;
+                        if (event.nativeEvent.isComposing) return;
+
+                        event.preventDefault();
+                        handleSubmit(event);
+                    }}
                 />
 
                 <button
@@ -207,7 +224,7 @@ const ChatInput = ({
                         (!message.trim() && !selectedFile)
                     }
                 >
-                    {isSending || isFileSending ? "전송 중" : "전송"}
+                    {isSending || isFileSending ? "전송 중" : "보내기"}
                 </button>
             </div>
         </form>

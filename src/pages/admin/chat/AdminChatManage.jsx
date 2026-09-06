@@ -10,7 +10,8 @@ import useAdminChatRoom from "../../../hooks/useAdminChatRoom";
 import useChatMessages from "../../../hooks/useChatMessages";
 import useAdminChatSocket from "../../../hooks/useAdminChatSocket";
 import useChatPresence from "../../../hooks/useChatPresence";
-import styles from "./AdminChatManage.module.css";
+import Skeleton from "../../../components/common/skeleton/Skeleton";
+import styles from "../../user/chat/UserTeamChat.module.css";
 import useDelayedLoading from "../../../hooks/useDelayedLoading";
 import { useCallback, useEffect, useState } from "react";
 import {
@@ -52,6 +53,7 @@ const AdminChatManage = () => {
         messageListRef,
         addMessage,
         clearMessages,
+        pinToBottom,
         handleEditMessage,
         handleDeleteMessage,
         handleMessageEvent,
@@ -61,7 +63,6 @@ const AdminChatManage = () => {
         fetchMessages: requestAdminChatMessages,
         markAsRead: requestMarkAdminChatAsRead,
         onReadComplete: dispatchChatUnreadChange,
-        autoScrollOnLoad: true,
     });
 
     const [channelSummaries, setChannelSummaries] = useState([]);
@@ -190,6 +191,7 @@ const AdminChatManage = () => {
         onMessageEvent: handleMessageEvent,
         onChannelEvent: handleChannelEvent,
         onUnreadEvent: handleUnreadEvent,
+        onBeforeSend: pinToBottom,
     });
 
     const { members, onlineMembers, offlineMembers, hasPresenceLoaded } =
@@ -294,41 +296,100 @@ const AdminChatManage = () => {
         ? "채팅 서버에 연결하는 중입니다"
         : `${selectedChannel.channelName}에 메시지 입력`;
 
+    const [openDrawer, setOpenDrawer] = useState(null);
+    const closeDrawers = () => setOpenDrawer(null);
+
     return (
         <div className={styles.page}>
             <Header />
 
-            <main className={styles.panel}>
-                <div className={styles.backBar}>
-                    <Link to="/admin/chat" className={styles.backLink}>
-                        ← 채팅 목록으로
-                    </Link>
-                </div>
+            <main className={styles.body}>
+                <div className={styles.layout}>
+                    <div
+                        className={`${styles.drawer} ${styles.drawerLeft} ${
+                            openDrawer === "channel" ? styles.drawerOpen : ""
+                        }`}
+                    >
+                        <div className={styles.backBar}>
+                            <Link to="/admin/chat" className={styles.backLink}>
+                                ← 채팅 목록
+                            </Link>
+                        </div>
 
-                <section className={styles.chatLayout}>
-                    <ChatSidebar
-                        teamName={selectedRoom?.teamName}
-                        channels={selectedRoom?.channels ?? []}
-                        selectedChannelId={selectedChannel?.id}
-                        getChannelUnreadCount={getChannelUnreadCount}
-                        canManageChannel={false}
-                        onSelectChannel={handleSelectChannel}
-                        onOpenChannelModal={() => {}}
-                        onEditChannel={() => {}}
-                        onDeleteChannel={() => {}}
-                    />
+                        <ChatSidebar
+                            teamName={selectedRoom?.teamName}
+                            channels={selectedRoom?.channels ?? []}
+                            selectedChannelId={selectedChannel?.id}
+                            getChannelUnreadCount={getChannelUnreadCount}
+                            canManageChannel={false}
+                            onSelectChannel={(channel) => {
+                                handleSelectChannel(channel);
+                                closeDrawers();
+                            }}
+                            onOpenChannelModal={() => {}}
+                            onEditChannel={() => {}}
+                            onDeleteChannel={() => {}}
+                            onCloseDrawer={closeDrawers}
+                        />
+                    </div>
 
-                    <section className={styles.chatContent}>
-                        {selectedChannel && (
-                            <div className={styles.chatHeader}>
-                                <div className={styles.chatHeaderTitle}>
-                                    {selectedChannel.channelName}
-                                </div>
-                                <div className={styles.chatHeaderMeta}>
-                                    {memberCount}명 참여 중
-                                </div>
+                    <section className={styles.chatColumn}>
+                        <div className={styles.chatHeader}>
+                            <button
+                                type="button"
+                                className={`${styles.iconButton} ${styles.channelToggle}`}
+                                aria-label="채널 목록"
+                                onClick={() => setOpenDrawer("channel")}
+                            >
+                                <svg
+                                    width="19"
+                                    height="19"
+                                    viewBox="0 0 24 24"
+                                    fill="none"
+                                    stroke="currentColor"
+                                    strokeWidth="1.9"
+                                    strokeLinecap="round"
+                                    aria-hidden="true"
+                                >
+                                    <path d="M4 6h16M4 12h16M4 18h16" />
+                                </svg>
+                            </button>
+
+                            <div className={styles.chatHeaderMain}>
+                                <p className={styles.chatHeaderTitle}>
+                                    {selectedChannel?.channelName ?? "채팅"}
+                                </p>
+                                <p className={styles.chatHeaderMeta}>
+                                    {selectedRoom?.teamName
+                                        ? `${selectedRoom.teamName} · ${memberCount}명 참여 중`
+                                        : `${memberCount}명 참여 중`}
+                                </p>
                             </div>
-                        )}
+
+                            <div className={styles.chatHeaderRight}>
+                                <button
+                                    type="button"
+                                    className={`${styles.iconButton} ${styles.memberToggle}`}
+                                    aria-label="팀원"
+                                    onClick={() => setOpenDrawer("member")}
+                                >
+                                    <svg
+                                        width="19"
+                                        height="19"
+                                        viewBox="0 0 24 24"
+                                        fill="none"
+                                        stroke="currentColor"
+                                        strokeWidth="1.8"
+                                        strokeLinecap="round"
+                                        aria-hidden="true"
+                                    >
+                                        <path d="M16 19v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2" />
+                                        <circle cx="9" cy="7" r="4" />
+                                        <path d="M22 19v-2a4 4 0 0 0-3-3.87" />
+                                    </svg>
+                                </button>
+                            </div>
+                        </div>
 
                         <ChatPinnedBar
                             pinnedMessage={pinnedMessage}
@@ -340,48 +401,70 @@ const AdminChatManage = () => {
                             <p className={styles.errorText}>{finalError}</p>
                         )}
 
-                        <div className={styles.messageArea}>
-                            {isLoading && showRoomLoading && (
-                                <p className={styles.emptyText}>
-                                    채팅방을 불러오는 중입니다.
-                                </p>
-                            )}
-
-                            {!isLoading &&
+                        <div
+                            ref={messageListRef}
+                            className={styles.messageArea}
+                            onScroll={handleMessageScroll}
+                        >
+                            {(isLoading && showRoomLoading) ||
+                            (!isLoading &&
                                 isMessageLoading &&
-                                showMessageLoading && (
-                                    <p className={styles.emptyText}>
-                                        메시지를 불러오는 중입니다.
+                                showMessageLoading) ? (
+                                <div className={styles.messageSkeleton}>
+                                    <div className={styles.skeletonRow}>
+                                        <Skeleton width={36} height={36} circle />
+                                        <div className={styles.skeletonBody}>
+                                            <Skeleton width={96} height={16} />
+                                            <Skeleton
+                                                width="66%"
+                                                height={40}
+                                                radius={16}
+                                                style={{ marginTop: 8 }}
+                                            />
+                                        </div>
+                                    </div>
+                                    <div className={styles.skeletonRowMine}>
+                                        <Skeleton
+                                            width="50%"
+                                            height={40}
+                                            radius={16}
+                                        />
+                                    </div>
+                                </div>
+                            ) : showEmptyChannel ? (
+                                <div className={styles.emptyState}>
+                                    <p className={styles.emptyTitle}>
+                                        선택할 수 있는 채널이 없어요
                                     </p>
-                                )}
-
-                            {showEmptyChannel && (
-                                <p className={styles.emptyText}>
-                                    선택할 수 있는 채널이 없습니다.
-                                </p>
-                            )}
-
-                            {showEmptyMessage && (
-                                <p className={styles.emptyText}>
-                                    아직 작성된 메시지가 없습니다.
-                                </p>
-                            )}
-
-                            {showMessageList && (
-                                <ChatMessageList
-                                    messageListRef={messageListRef}
-                                    messages={messages}
-                                    currentUserId={currentUserId}
-                                    isLoadingMoreMessages={
-                                        isLoadingMoreMessages
-                                    }
-                                    onScroll={handleMessageScroll}
-                                    onEditMessage={handleEditMessage}
-                                    onDeleteMessage={handleDeleteMessage}
-                                    pinnedMessageId={pinnedMessageId}
-                                    flashingMessageId={flashingMessageId}
-                                    onTogglePin={handleTogglePin}
-                                />
+                                    <p className={styles.emptyDesc}>
+                                        팀이 채널을 만들면 여기에서 대화를 볼 수
+                                        있어요.
+                                    </p>
+                                </div>
+                            ) : showEmptyMessage ? (
+                                <div className={styles.emptyState}>
+                                    <p className={styles.emptyTitle}>
+                                        아직 작성된 메시지가 없어요
+                                    </p>
+                                    <p className={styles.emptyDesc}>
+                                        팀원이 대화를 시작하면 여기에 표시돼요.
+                                    </p>
+                                </div>
+                            ) : (
+                                showMessageList && (
+                                    <ChatMessageList
+                                        messages={messages}
+                                        currentUserId={currentUserId}
+                                        isLoadingMoreMessages={
+                                            isLoadingMoreMessages
+                                        }
+                                        onEditMessage={handleEditMessage}
+                                        onDeleteMessage={handleDeleteMessage}
+                                        pinnedMessageId={pinnedMessageId}
+                                        flashingMessageId={flashingMessageId}
+                                        onTogglePin={handleTogglePin}
+                                    />
+                                )
                             )}
                         </div>
 
@@ -395,13 +478,28 @@ const AdminChatManage = () => {
                         />
                     </section>
 
-                    <ChatMemberSidebar
-                        hasPresenceLoaded={hasPresenceLoaded}
-                        members={members}
-                        onlineMembers={onlineMembers}
-                        offlineMembers={offlineMembers}
-                    />
-                </section>
+                    <div
+                        className={`${styles.drawer} ${styles.drawerRight} ${
+                            openDrawer === "member" ? styles.drawerOpen : ""
+                        }`}
+                    >
+                        <ChatMemberSidebar
+                            hasPresenceLoaded={hasPresenceLoaded}
+                            members={members}
+                            onlineMembers={onlineMembers}
+                            offlineMembers={offlineMembers}
+                            onCloseDrawer={closeDrawers}
+                        />
+                    </div>
+
+                    {openDrawer && (
+                        <div
+                            className={styles.scrim}
+                            onClick={closeDrawers}
+                            role="presentation"
+                        />
+                    )}
+                </div>
             </main>
         </div>
     );

@@ -11,12 +11,23 @@ const ChatSidebar = ({
     onOpenChannelModal,
     onEditChannel,
     onDeleteChannel,
+    onCloseDrawer,
 }) => {
     return (
         <aside className={styles.sidebar}>
             <div className={styles.sidebarHeader}>
-                <h1>{teamName ?? "\u00A0"}</h1>
-                <p>프로젝트 대화 공간</p>
+                <div>
+                    <h1>{teamName ?? "\u00A0"}</h1>
+                    <p>프로젝트 대화 공간</p>
+                </div>
+                <button
+                    type="button"
+                    className={styles.drawerClose}
+                    aria-label="채널 목록 닫기"
+                    onClick={onCloseDrawer}
+                >
+                    ×
+                </button>
             </div>
 
             <div className={styles.channelArea}>

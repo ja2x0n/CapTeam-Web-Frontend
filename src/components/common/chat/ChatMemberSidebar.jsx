@@ -30,6 +30,7 @@ const ChatMemberSidebar = ({
     members = [],
     onlineMembers = [],
     offlineMembers = [],
+    onCloseDrawer,
 }) => {
     const isInitialPending = !hasPresenceLoaded && members.length === 0;
 
@@ -38,6 +39,14 @@ const ChatMemberSidebar = ({
             <div className={styles.memberSidebarHeader}>
                 <strong>팀원</strong>
                 <span>{isInitialPending ? "" : `${members.length}명`}</span>
+                <button
+                    type="button"
+                    className={styles.drawerClose}
+                    aria-label="팀원 목록 닫기"
+                    onClick={onCloseDrawer}
+                >
+                    ×
+                </button>
             </div>
 
             {isInitialPending ? (

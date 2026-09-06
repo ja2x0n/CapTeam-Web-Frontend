@@ -41,7 +41,7 @@
 
 .senderName {
     color: var(--color-text-primary);
-    font-size: var(--font-size-sm);
+    font-size: var(--font-size-md);
     font-weight: var(--font-weight-bold);
 }
 
@@ -65,18 +65,18 @@
 
 .messageBubble {
     padding: 10px 16px;
-    border-radius: 16px;
+    border-radius: 18px;
     background-color: var(--color-bubble);
     color: var(--color-text-primary);
-    font-size: var(--font-size-md);
-    font-weight: var(--font-weight-medium);
-    line-height: 1.55;
+    font-size: var(--font-size-lg);
+    font-weight: var(--font-weight-regular);
+    line-height: 1.6;
     text-align: left;
     word-break: break-word;
 }
 
 .messageLink {
-    color: #2563eb;
+    color: var(--color-primary-text);
     font-weight: var(--font-weight-bold);
     text-decoration: underline;
     text-underline-offset: 3px;
@@ -84,7 +84,7 @@
 }
 
 .messageLink:hover {
-    color: #1d4ed8;
+    color: var(--color-primary-dark);
 }
 
 .mine .messageBubble {
