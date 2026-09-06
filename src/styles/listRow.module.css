@@ -1,0 +1,56 @@
+/* 카드 격자 대신 쓰는 공용 리스트 로우. 화면별 CSS 모듈에서 composes로 가져다 쓴다. */
+
+.list {
+    display: flex;
+    flex-direction: column;
+    border-top: 1px solid var(--color-border);
+    border-bottom: 1px solid var(--color-border);
+}
+
+/* 로우끼리만 구분선을 둔다 — 마지막 줄 아래에 선이 두 겹으로 겹치지 않게 */
+.list > * + * {
+    border-top: 1px solid var(--color-border);
+}
+
+.row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 16px;
+    width: 100%;
+    padding: 20px;
+    background: none;
+    border: none;
+    text-align: left;
+    color: inherit;
+    font-family: var(--font-family);
+    transition: background-color 0.15s ease;
+}
+
+.rowClickable {
+    cursor: pointer;
+    border-radius: 12px;
+}
+
+.rowClickable:hover {
+    background-color: var(--color-bg-secondary);
+}
+
+.label {
+    font-size: 17px;
+    font-weight: var(--font-weight-medium);
+    color: var(--color-text-primary);
+}
+
+.value {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 15px;
+    color: var(--color-text-secondary);
+}
+
+.chevron {
+    color: var(--color-text-muted);
+    flex-shrink: 0;
+}

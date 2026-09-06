@@ -54,7 +54,7 @@
 ### 3순위 — 아직 프론트 실구현도 안 한 것
 Notion P0 항목은 위 완료 목록으로 전부 끝났음(설문 태그 제거·선호 팀원 검색·버전 저장·재생성 비교·팀 구성 방식 선택 5개 다 완료). AI 처리 진행률/신뢰성 설명 보강(구 P1)은 불필요 판단으로 계획에서 제외(8/6).
 
-1. **팀 채팅 — 메시지 고정: 실구현 완료(8/6)**. 디자인 목업(`Design/TeamChat.html`)의 고정 바를 다시 다듬어서(민트 배경 전체 채움 → 흰 배경+좌측 얇은 강조선으로 절제, 클릭 시 원본 메시지로 스크롤+하이라이트) `ChatMessage.jsx`/`ChatMessageList.jsx`/`UserTeamChat.jsx`/신규 `ChatPinnedBar.jsx`에 연결함. **백엔드에 고정 메시지 API가 아직 없어서 채널 전환 시 초기화되는 클라이언트 로컬 state로만 구현**(서버 저장·타인 공유 안 됨) — API가 확정되면 이 state를 서버 값으로 교체하면 됨.
+1. **팀 채팅 — 메시지 고정: 실구현 완료(8/6)**. 디자인 목업(`Design/TeamChat.html`)의 고정 바를 다시 다듬어서(민트 배경 전체 채움 → 흰 배경+좌측 얇은 강조선으로 절제, 클릭 시 원본 메시지로 스크롤+하이라이트) `ChatMessage.jsx`/`ChatMessageList.jsx`/`UserTeamChat.jsx`/신규 `ChatPinnedBar.jsx`에 연결함. ~~백엔드에 고정 메시지 API가 아직 없어서 클라이언트 로컬 state로만 구현~~ → **정정(9/4)**: 백엔드에 `POST/DELETE /api/chat/channels/{channelId}/pin`이 실제로 존재하고(`ChatController.java:163,173`), 프론트도 `chatApi.js`의 `requestPinChatMessage`/`requestUnpinChatMessage`로 이미 서버에 저장하고 있음. `selectedChannel.pinnedMessageId`를 서버 값으로 읽는 것까지 연결 완료 — 로컬 state 아님.
 2. **팀 채팅 — 담당 업무 표시: 실구현 완료(8/6)**. 목업의 자유 텍스트 담당 업무("로그인/라우팅" 등)와 달리, 그 정도로 세부적인 필드는 백엔드에 없어서 **이미 확정된 `GET /api/teams/my-team` 응답의 `members[].studentRole`(희망 직군)을 대신 사용** — `ChatMemberSidebar.jsx`에 "담당: 프론트엔드" 식으로 표시. `useUserTeamChat.js`가 팀 로드 시 `requestMyTeam()`을 한 번 호출해 `userId` 기준으로 presence 목록(`useChatPresence`, 이름/온라인 여부만 내려줌)과 합침. `studentRole`이 없는 학생은 표시 생략(안전한 폴백).
 3. **팀 채팅 — 읽음 상태 표시: 보류(8/6)**. 백엔드 코드 확인 결과 `ChatMemberPresenceResponseDto`엔 `userId`/`name`/`online`만 있고, 메시지별 읽음 인원을 알 수 있는 필드가 프로젝트 어디에도 없음(기존 `unreadCount`는 채널 단위 안 읽은 개수일 뿐, "이 메시지를 누가 읽었는지"와는 다른 개념). 실제 데이터 없이 숫자를 지어내는 건 하지 않았음 — 백엔드에 메시지별 읽음 인원 API가 생기면 그때 구현.
 

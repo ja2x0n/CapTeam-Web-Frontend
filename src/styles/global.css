@@ -1,25 +1,26 @@
-@import url("https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap");
-
 :root {
     --color-primary: #60c49b;
     --color-primary-dark: #5aa889;
     --color-primary-bg: #e8f5ee;
+    /* 브랜드 색 "글자" 전용. #60c49b는 흰 배경 대비 2.1:1이라 작은 글자에 못 씀 */
+    --color-primary-text: #2e7d5b;
 
-    --color-text-primary: #1f2933;
-    --color-text-secondary: #667085;
-    --color-text-muted: #98a2b3;
+    --color-text-primary: #191f28;
+    --color-text-secondary: #4e5968;
+    --color-text-muted: #8b95a1;
 
     --color-bg: #ffffff;
-    --color-bg-secondary: #f8faf9;
-    --color-bg-hover: #f1f8f5;
+    --color-bg-secondary: #f2f4f6;
+    --color-bg-hover: #f2f4f6;
 
-    --color-border: #d8d9dd;
-    --color-bubble: #f1f3f5;
+    --color-border: #e5e8eb;
+    --color-bubble: #f2f4f6;
 
-    --color-danger: #ef4444;
-    --color-danger-dark: #dc2626;
+    --color-danger: #e42939;
+    --color-danger-dark: #c81e2c;
 
-    --font-family: "Inter", -apple-system, sans-serif;
+    --font-family: "Pretendard", -apple-system, BlinkMacSystemFont, system-ui,
+        sans-serif;
 
     --font-size-xs: 12px;
     --font-size-sm: 13px;
@@ -36,9 +37,10 @@
     --font-weight-semibold: 600;
     --font-weight-bold: 700;
 
-    --header-height: 100px;
-    --page-padding: 40px;
-    --max-width: 1280px;
+    --header-height: 84px;
+    --page-padding: 32px;
+    --max-width: 1360px;
+    --max-width-wide: 1680px;
 
     --border-radius-xs: 2px;
     --border-radius-sm: 6px;
@@ -48,6 +50,13 @@
     --shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.08);
     --shadow-md: 0 4px 12px rgba(0, 0, 0, 0.08);
     --transition: 0.1s ease;
+
+    /* 모션: "스르륵 올라오기" 공통값 */
+    --ease-out: cubic-bezier(0.22, 1, 0.36, 1);
+    --duration-reveal: 420ms;
+    --duration-modal: 300ms;
+    --duration-overlay: 200ms;
+    --stagger: 50ms;
 }
 
 * {
@@ -62,6 +71,20 @@ body {
     color: var(--color-text-primary);
     background-color: var(--color-bg);
     -webkit-font-smoothing: antialiased;
+    /* 한국어는 기본값이면 단어 중간에서 끊긴다. 어절 단위 유지 + 긴 영문/URL만 예외 */
+    word-break: keep-all;
+    overflow-wrap: break-word;
+}
+
+p,
+li {
+    text-wrap: pretty;
+}
+
+h1,
+h2,
+h3 {
+    text-wrap: balance;
 }
 
 a {
@@ -81,4 +104,32 @@ textarea {
 
 textarea {
     resize: none !important;
+}
+
+/* 진입 모션. useInView 훅이 data-reveal 요소에 .isVisible을 붙인다 */
+[data-reveal] {
+    opacity: 0;
+    transform: translateY(10px);
+    transition: opacity var(--duration-reveal) var(--ease-out),
+        transform var(--duration-reveal) var(--ease-out);
+}
+
+[data-reveal].isVisible {
+    opacity: 1;
+    transform: none;
+}
+
+@media (prefers-reduced-motion: reduce) {
+    *,
+    *::before,
+    *::after {
+        animation-duration: 0.01ms !important;
+        animation-iteration-count: 1 !important;
+        transition-duration: 0.01ms !important;
+    }
+
+    [data-reveal] {
+        opacity: 1;
+        transform: none;
+    }
 }
