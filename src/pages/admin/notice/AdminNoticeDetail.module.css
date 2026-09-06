@@ -1,423 +1,141 @@
-.page {
-    min-height: 100vh;
-    background-color: var(--color-bg);
-}
+/* 학생 공지 상세(UserNoticeDetail.module.css)를 그대로 쓰고,
+   관리자 전용 액션·삭제 모달만 여기서 정의한다. */
 
-.body {
-    width: 100%;
-    max-width: 1200px;
-    margin: 0 auto;
-    padding: 48px 20px 72px;
-}
-
-.backLink {
-    display: inline-block;
-    margin-bottom: 28px;
-    color: var(--color-text-primary);
-    font-size: var(--font-size-lg);
-    font-weight: var(--font-weight-semibold);
-}
-
-.backLink:hover {
-    color: var(--color-primary);
-}
-
-.card {
-    width: 100%;
-    border: 1px solid var(--color-border);
-    border-radius: var(--border-radius-md);
-    background-color: #ffffff;
-    color-scheme: light;
-    overflow: hidden;
-}
-
-.cardHeader {
-    padding: 30px 30px 34px;
-    border-bottom: 1px solid var(--color-border);
-}
-
-.headerTop {
+.metaRow {
     display: flex;
-    align-items: flex-start;
+    flex-wrap: wrap;
+    align-items: center;
     justify-content: space-between;
-    gap: 24px;
+    gap: 16px;
 }
 
-.titleRow {
+.actions {
     display: flex;
+    gap: 8px;
+}
+
+.outlineButton {
+    display: inline-flex;
     align-items: center;
-    gap: 14px;
-    margin-bottom: 15px;
-}
-
-.title {
-    color: #000000;
-    font-size: var(--font-size-2xl-lg);
-    font-weight: var(--font-weight-semibold);
-    line-height: 1.25;
-}
-
-.tag {
-    flex-shrink: 0;
-    padding: 6px 10px;
-    border-radius: var(--border-radius-sm);
-    background-color: var(--color-primary);
-    color: #ffffff;
-    font-size: var(--font-size-sm);
-    font-weight: var(--font-weight-bold);
-}
-
-.meta {
-    display: flex;
-    align-items: center;
-    gap: 14px;
-    color: var(--color-text-secondary);
-    font-size: var(--font-size-lg);
-    font-weight: var(--font-weight-medium);
-}
-
-.contentArea {
-    min-height: 240px;
-    padding: 36px 42px 44px;
-    background-color: #ffffff;
-    color: #111827;
-    color-scheme: light;
-}
-
-.content {
-    background-color: #ffffff !important;
-    color: #111827 !important;
-    font-size: var(--font-size-xl);
-    font-weight: var(--font-weight-medium);
-    line-height: 1.75;
-    white-space: pre-line;
-}
-
-.content :global(*) {
-    background-color: transparent !important;
-    color: inherit !important;
-}
-
-.content :global(table) {
-    width: auto;
-    max-width: 100%;
-    margin: 14px 0;
-    border-collapse: collapse;
-    white-space: normal;
-}
-
-.content :global(th),
-.content :global(td) {
-    padding: 10px 14px;
+    height: 40px;
+    padding: 0 16px;
     border: 1px solid var(--color-border);
-    color: #111827 !important;
-    font-size: var(--font-size-md);
-    font-weight: var(--font-weight-medium);
-    line-height: 1.45;
-    text-align: left;
-    vertical-align: top;
-}
-
-.content :global(th) {
+    border-radius: 8px;
+    font-family: var(--font-family);
+    font-size: 15px;
     font-weight: var(--font-weight-semibold);
-}
-
-.content :global(h1),
-.content :global(h2),
-.content :global(h3) {
-    margin: 18px 0 10px;
-    color: #111827 !important;
-    font-weight: 800;
-    line-height: 1.35;
-}
-
-.content :global(h1) {
-    font-size: var(--font-size-3xl);
-}
-
-.content :global(h2) {
-    font-size: var(--font-size-2xl-lg);
-}
-
-.content :global(h3) {
-    font-size: var(--font-size-2xl);
-}
-
-.content :global(p) {
-    margin: 8px 0;
-}
-
-.content :global(p:first-child),
-.content :global(h1:first-child),
-.content :global(h2:first-child),
-.content :global(h3:first-child) {
-    margin-top: 0;
-}
-
-.content :global(p:last-child),
-.content :global(ul:last-child),
-.content :global(ol:last-child) {
-    margin-bottom: 0;
-}
-
-.content :global(strong),
-.content :global(b) {
-    color: #111827 !important;
-    font-weight: 900;
-}
-
-.content :global(blockquote) {
-    margin: 18px 0;
-    padding: 14px 18px;
-    border-left: 5px solid var(--color-primary);
-    border-radius: var(--border-radius-sm);
-    background-color: var(--color-primary-bg) !important;
-    color: #111827 !important;
-}
-
-.content :global(ul),
-.content :global(ol) {
-    margin: 10px 0;
-    padding-left: 26px;
-}
-
-.content :global(li) {
-    margin: 6px 0;
-}
-
-.content :global(code) {
-    padding: 3px 7px;
-    border-radius: var(--border-radius-xs);
-    background-color: var(--color-bg-secondary) !important;
-    color: var(--color-primary-dark) !important;
-    font-size: var(--font-size-lg);
-    font-weight: var(--font-weight-bold);
-}
-
-.content + .content {
-    margin-top: 10px;
-}
-
-.emptyBox {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    min-height: 240px;
-    border: 1px solid var(--color-border);
-    border-radius: var(--border-radius-lg);
     color: var(--color-text-secondary);
-    font-size: var(--font-size-xl);
-    font-weight: var(--font-weight-semibold);
+    background: none;
+    transition: border-color 0.15s ease, color 0.15s ease;
 }
 
-.important {
-    color: var(--color-primary) !important;
-    font-size: var(--font-size-lg);
-    font-weight: var(--font-weight-bold);
-    margin-top: 30px;
+.outlineButton:hover {
+    border-color: var(--color-primary);
+    color: var(--color-primary-text);
 }
+
+.dangerButton {
+    height: 40px;
+    padding: 0 16px;
+    border: 1px solid var(--color-border);
+    border-radius: 8px;
+    background: none;
+    font-family: var(--font-family);
+    font-size: 15px;
+    font-weight: var(--font-weight-semibold);
+    color: var(--color-danger);
+    transition: border-color 0.15s ease, background-color 0.15s ease;
+}
+
+.dangerButton:hover {
+    border-color: var(--color-danger);
+    background-color: #fff2f3;
+}
+
+/* ── 삭제 확인 모달 ──────────────────────────────── */
 
 .modalOverlay {
     position: fixed;
     inset: 0;
-    z-index: 100;
+    z-index: 50;
     display: flex;
     align-items: center;
     justify-content: center;
-    padding: 20px;
-    background-color: rgb(0 0 0 / 40%);
+    padding: 24px;
+    background-color: rgba(25, 31, 40, 0.3);
 }
 
 .modalBox {
     width: 100%;
-    max-width: 420px;
-    padding: 28px;
-    border-radius: var(--border-radius-md);
+    max-width: 440px;
+    padding: 32px;
+    border-radius: var(--border-radius-lg);
     background-color: var(--color-bg);
+    box-shadow: 0 20px 60px rgba(0, 0, 0, 0.18);
 }
 
 .modalTitle {
-    margin: 0 0 12px;
-    color: var(--color-text-primary);
-    font-size: var(--font-size-xl);
+    font-size: 22px;
     font-weight: var(--font-weight-bold);
 }
 
 .modalText {
-    margin: 0;
+    margin-top: 12px;
+    font-size: var(--font-size-lg);
+    line-height: 1.6;
     color: var(--color-text-secondary);
-    font-size: var(--font-size-md);
-    line-height: 1.5;
-    font-weight: var(--font-weight-semibold);
 }
 
 .deleteError {
-    margin-top: 14px;
-    color: var(--color-danger);
-    font-size: var(--font-size-sm);
+    margin-top: 12px;
+    font-size: var(--font-size-md);
     font-weight: var(--font-weight-semibold);
+    color: var(--color-danger);
 }
 
 .modalActions {
     display: flex;
     justify-content: flex-end;
-    gap: 10px;
-    margin-top: 28px;
+    gap: 12px;
+    margin-top: 32px;
 }
 
-.actionButtons {
-    display: flex;
-    align-items: center;
-    gap: 10px;
+.cancelButton {
+    height: 48px;
+    padding: 0 20px;
+    border: none;
+    border-radius: 8px;
+    background: none;
+    font-family: var(--font-family);
+    font-size: 15px;
+    font-weight: var(--font-weight-semibold);
+    color: var(--color-text-secondary);
+    transition: background-color 0.15s ease;
 }
 
-.editLink {
-    display: inline-flex;
+.cancelButton:hover:not(:disabled) {
+    background-color: var(--color-bg-secondary);
 }
 
-.no:hover {
-    background-color: var(--color-text-secondary);
-    border: 1px solid var(--color-text-secondary);
-    color: white;
-}
-
-.delete:hover {
+.confirmDeleteButton {
+    height: 48px;
+    padding: 0 24px;
+    border: none;
+    border-radius: 8px;
     background-color: var(--color-danger);
-    color: white;
+    font-family: var(--font-family);
+    font-size: var(--font-size-lg);
+    font-weight: var(--font-weight-semibold);
+    color: #ffffff;
+    transition: background-color 0.15s ease;
 }
 
-.button {
-    border-radius: var(--border-radius-sm);
-    padding: 5px 10px;
+.confirmDeleteButton:hover:not(:disabled) {
+    background-color: var(--color-danger-dark);
 }
 
-.deleteButton:hover {
-    background-color: var(--color-danger);
-    color: white;
-}
-
-.editButton:hover {
-    background-color: var(--color-primary);
-    color: white;
-}
-
-@media (max-width: 768px) {
-    .body {
-        padding: 32px 16px 56px;
-    }
-
-    .cardHeader,
-    .contentArea {
-        padding-left: 24px;
-        padding-right: 24px;
-    }
-
-    .titleRow {
-        align-items: flex-start;
-        flex-direction: column;
-    }
-
-    .title {
-        font-size: var(--font-size-2xl-lg);
-    }
-
-    .content {
-        font-size: var(--font-size-xl);
-    }
-
-    .headerTop {
-        flex-direction: column;
-    }
-}
-
-@media (max-width: 640px) {
-    .backLink {
-        margin-bottom: 20px;
-        font-size: var(--font-size-md);
-    }
-
-    .cardHeader {
-        padding: 22px 18px 24px;
-    }
-
-    .titleRow {
-        gap: 10px;
-        margin-bottom: 12px;
-    }
-
-    .title {
-        font-size: var(--font-size-2xl);
-        line-height: 1.35;
-        word-break: keep-all;
-    }
-
-    .tag {
-        align-self: flex-start;
-    }
-
-    .meta {
-        flex-direction: column;
-        align-items: flex-start;
-        gap: 6px;
-        font-size: var(--font-size-sm);
-    }
-
-    .actionButtons {
-        width: 100%;
-        flex-wrap: wrap;
-    }
-
-    .editLink {
-        flex: 1 1 0;
-    }
-
-    .editLink :global(button),
-    .actionButtons > :global(button) {
-        width: 100%;
-    }
-
-    .contentArea {
-        min-height: 180px;
-        padding: 24px 18px 32px;
-    }
-
-    .content {
-        font-size: var(--font-size-md);
-        line-height: 1.8;
-        word-break: break-word;
-    }
-
-    .content :global(h1) {
-        font-size: var(--font-size-2xl);
-    }
-
-    .content :global(h2) {
-        font-size: var(--font-size-xl);
-    }
-
-    .content :global(h3) {
-        font-size: var(--font-size-lg);
-    }
-
-    .content :global(ul),
-    .content :global(ol) {
-        padding-left: 22px;
-    }
-
-    .content :global(table) {
-        display: block;
-        overflow-x: auto;
-        margin: 12px 0;
-    }
-
-    .content :global(th),
-    .content :global(td) {
-        padding: 9px 12px;
-        font-size: var(--font-size-sm);
-        white-space: nowrap;
-    }
-
-    .important {
-        font-size: var(--font-size-md);
-    }
+.confirmDeleteButton:disabled,
+.cancelButton:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
 }

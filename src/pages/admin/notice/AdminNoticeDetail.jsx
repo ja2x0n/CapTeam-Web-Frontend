@@ -1,15 +1,19 @@
+// Design/notice-detail.html 반영. 학생 상세와 같은 구조 + 수정·삭제 액션.
 import { useEffect, useState } from "react";
 import { Link, useNavigate, useParams } from "react-router-dom";
-import styles from "./AdminNoticeDetail.module.css";
+import MDEditor from "@uiw/react-md-editor";
+import styles from "../../user/notice/UserNoticeDetail.module.css";
+import adminStyles from "./AdminNoticeDetail.module.css";
 import Header from "../../../components/common/header/Header";
-import Button from "../../../components/common/button/Button";
+import EmptyState from "../../../components/common/empty/EmptyState";
+import ModalOverlay from "../../../components/common/modal/ModalOverlay";
+import useInView from "../../../hooks/useInView";
+import { NoticeDetailSkeleton } from "../../user/notice/UserNoticeDetail";
 import {
     requestDeleteNotice,
     requestNoticeDetail,
 } from "../../../api/noticeApi";
-import MDEditor from "@uiw/react-md-editor";
 import { formatCreatedAt } from "../../../utils/format";
-import useDelayedLoading from "../../../hooks/useDelayedLoading";
 import TeamResultNoticeDetail from "../../../components/common/notice/TeamResultNoticeDetail";
 import { parseTeamResultNoticeContent } from "../../../utils/teamResultNotice";
 
@@ -22,7 +26,8 @@ const AdminNoticeDetail = () => {
     const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
     const [isDeleting, setIsDeleting] = useState(false);
     const [deleteError, setDeleteError] = useState("");
-    const showLoading = useDelayedLoading(isLoading);
+
+    const contentRef = useInView({ replayKey: `${isLoading}-${id}` });
 
     useEffect(() => {
         const getNoticeDetail = async () => {
@@ -55,175 +60,226 @@ const AdminNoticeDetail = () => {
         }
     };
 
-    if (isLoading) {
-        return (
-            <div className={styles.page}>
-                <Header />
-                <main className={styles.body}>
-                    <Link to="/admin/notice" className={styles.backLink}>
-                        ← 목록
-                    </Link>
-                    <section className={styles.emptyBox}>
-                        {showLoading && "공지를 불러오는 중입니다."}
-                    </section>
-                </main>
-            </div>
-        );
-    }
-
-    if (error) {
-        return (
-            <div className={styles.page}>
-                <Header />
-                <main className={styles.body}>
-                    <Link to="/admin/notice" className={styles.backLink}>
-                        ← 목록
-                    </Link>
-                    <section className={styles.emptyBox}>{error}</section>
-                </main>
-            </div>
-        );
-    }
-
-    if (!notice) {
-        return (
-            <div className={styles.page}>
-                <Header />
-                <main className={styles.body}>
-                    <Link to="/admin/notice" className={styles.backLink}>
-                        ← 목록
-                    </Link>
-                    <section className={styles.emptyBox}>
-                        공지를 찾을 수 없습니다.
-                    </section>
-                </main>
-            </div>
-        );
-    }
-
     const teamResultParsed =
-        notice.noticeType === "TEAM_RESULT" && notice.teamResult
+        notice?.noticeType === "TEAM_RESULT" && notice.teamResult
             ? parseTeamResultNoticeContent(notice.content)
             : null;
+    const isImportant = notice?.important === "IMPORTANT";
 
     return (
         <div className={styles.page}>
             <Header />
-            <main className={styles.body}>
-                <Link to="/admin/notice" className={styles.backLink}>
-                    ← 목록
-                </Link>
 
-                <section className={styles.card}>
-                    <div className={styles.cardHeader}>
-                        <div className={styles.headerTop}>
-                            <div>
-                                <div className={styles.titleRow}>
-                                    <h1 className={styles.title}>
+            <main className={styles.body}>
+                <div className={styles.inner} ref={contentRef}>
+                    <div className={styles.backRow}>
+                        <Link to="/admin/notice" className={styles.backLink}>
+                            ← 공지 목록
+                        </Link>
+                    </div>
+
+                    {isLoading ? (
+                        <NoticeDetailSkeleton />
+                    ) : error || !notice ? (
+                        <EmptyState
+                            variant={error ? "error" : "empty"}
+                            title={
+                                error
+                                    ? "공지를 불러오지 못했어요"
+                                    : "공지를 찾을 수 없어요"
+                            }
+                            description={
+                                error ||
+                                "삭제되었거나 주소가 잘못되었을 수 있어요."
+                            }
+                        />
+                    ) : (
+                        <div className={styles.columns}>
+                            <article className={styles.article}>
+                                <header className={styles.articleHead}>
+                                    {(isImportant || teamResultParsed) && (
+                                        <div
+                                            data-reveal
+                                            className={styles.badgeRow}
+                                        >
+                                            {isImportant && (
+                                                <span
+                                                    className={
+                                                        styles.importantBadge
+                                                    }
+                                                >
+                                                    중요
+                                                </span>
+                                            )}
+                                            {teamResultParsed && (
+                                                <span
+                                                    className={styles.typeBadge}
+                                                >
+                                                    팀 배정 결과
+                                                </span>
+                                            )}
+                                        </div>
+                                    )}
+
+                                    <h1 data-reveal className={styles.title}>
                                         {notice.title}
                                     </h1>
-                                    {notice.important === "IMPORTANT" && (
-                                        <span className={styles.tag}>중요</span>
+
+                                    <div
+                                        data-reveal
+                                        className={adminStyles.metaRow}
+                                    >
+                                        <p className={styles.metaLine}>
+                                            {notice.writer} ·{" "}
+                                            {formatCreatedAt(notice.createdAt)}
+                                        </p>
+
+                                        <div className={adminStyles.actions}>
+                                            <Link
+                                                to={`/admin/notice/${id}/edit`}
+                                                className={
+                                                    adminStyles.outlineButton
+                                                }
+                                            >
+                                                수정
+                                            </Link>
+                                            <button
+                                                type="button"
+                                                className={
+                                                    adminStyles.dangerButton
+                                                }
+                                                onClick={() =>
+                                                    setIsDeleteModalOpen(true)
+                                                }
+                                            >
+                                                삭제
+                                            </button>
+                                        </div>
+                                    </div>
+                                </header>
+
+                                <div className={styles.contentArea}>
+                                    {teamResultParsed ? (
+                                        <TeamResultNoticeDetail
+                                            notice={notice}
+                                            parsed={teamResultParsed}
+                                        />
+                                    ) : (
+                                        <>
+                                            <div data-reveal>
+                                                <MDEditor.Markdown
+                                                    className={styles.markdown}
+                                                    source={notice.content}
+                                                />
+                                            </div>
+                                            {isImportant && (
+                                                <div
+                                                    data-reveal
+                                                    className={
+                                                        styles.importantNote
+                                                    }
+                                                >
+                                                    중요한 공지예요. 내용을
+                                                    확인한 뒤 팀원들과
+                                                    공유해주세요.
+                                                </div>
+                                            )}
+                                        </>
                                     )}
                                 </div>
+                            </article>
 
-                                <div className={styles.meta}>
-                                    <span>교사 {notice.writer}</span>
-                                    <span>
-                                        {formatCreatedAt(notice.createdAt)}
-                                    </span>
-                                </div>
-                            </div>
-
-                            <div className={styles.actionButtons}>
-                                <Link
-                                    to={`/admin/notice/${id}/edit`}
-                                    className={styles.editLink}
-                                >
-                                    <Button
-                                        type="button"
-                                        buttonSize="small"
-                                        buttonColor="secondary"
-                                        className={`${styles.button} ${styles.editButton}`}
-                                    >
-                                        수정
-                                    </Button>
-                                </Link>
-                                <Button
-                                    type="button"
-                                    buttonSize="small"
-                                    buttonColor="danger"
-                                    onClick={() => setIsDeleteModalOpen(true)}
-                                    className={`${styles.button} ${styles.deleteButton}`}
-                                >
-                                    삭제
-                                </Button>
-                            </div>
-                        </div>
-                    </div>
-
-                    <div className={styles.contentArea}>
-                        {teamResultParsed ? (
-                            <TeamResultNoticeDetail
-                                notice={notice}
-                                parsed={teamResultParsed}
-                            />
-                        ) : (
-                            <>
-                                <MDEditor.Markdown
-                                    className={styles.content}
-                                    source={notice.content}
-                                />
-                                {notice.important === "IMPORTANT" && (
-                                    <p className={styles.important}>
-                                        중요한 공지이므로 내용을 확인한 뒤
-                                        팀원들과 공유해주세요.
+                            <aside className={styles.metaRail}>
+                                <div className={styles.metaRailInner}>
+                                    <p className={styles.railLabel}>작성자</p>
+                                    <p className={styles.railValue}>
+                                        {notice.writer}
                                     </p>
-                                )}
-                            </>
-                        )}
-                    </div>
-                </section>
+
+                                    <p className={styles.railLabel}>작성일</p>
+                                    <p className={styles.railValue}>
+                                        {formatCreatedAt(notice.createdAt)}
+                                    </p>
+
+                                    <p className={styles.railLabel}>분류</p>
+                                    <p className={styles.railValue}>
+                                        {teamResultParsed
+                                            ? "팀 배정 결과"
+                                            : "일반 공지"}
+                                    </p>
+
+                                    {isImportant && (
+                                        <div className={styles.railImportant}>
+                                            <p
+                                                className={
+                                                    styles.railImportantTitle
+                                                }
+                                            >
+                                                중요 공지
+                                            </p>
+                                            <p
+                                                className={
+                                                    styles.railImportantText
+                                                }
+                                            >
+                                                학생 홈에서도 눈에 띄게 보여요.
+                                            </p>
+                                        </div>
+                                    )}
+
+                                    <Link
+                                        to="/admin/notice"
+                                        className={styles.railButton}
+                                    >
+                                        공지 목록으로
+                                    </Link>
+                                </div>
+                            </aside>
+                        </div>
+                    )}
+                </div>
             </main>
 
             {isDeleteModalOpen && (
-                <div className={styles.modalOverlay}>
-                    <div className={styles.modalBox}>
-                        <h2 className={styles.modalTitle}>
-                            정말 삭제하시겠습니까?
+                <ModalOverlay
+                    onClose={() => setIsDeleteModalOpen(false)}
+                    overlayClassName={adminStyles.modalOverlay}
+                    modalClassName={adminStyles.modalBox}
+                >
+                    <>
+                        <h2 className={adminStyles.modalTitle}>
+                            이 공지를 삭제할까요?
                         </h2>
-                        <p className={styles.modalText}>
-                            삭제한 공지는 다시 되돌릴 수 없습니다.
+                        <p className={adminStyles.modalText}>
+                            삭제한 공지는 다시 되돌릴 수 없어요.
                         </p>
 
                         {deleteError && (
-                            <p className={styles.deleteError}>{deleteError}</p>
+                            <p className={adminStyles.deleteError}>
+                                {deleteError}
+                            </p>
                         )}
 
-                        <div className={styles.modalActions}>
-                            <Button
+                        <div className={adminStyles.modalActions}>
+                            <button
                                 type="button"
-                                buttonSize="small"
-                                buttonColor="ghost"
+                                className={adminStyles.cancelButton}
                                 disabled={isDeleting}
                                 onClick={() => setIsDeleteModalOpen(false)}
-                                className={styles.no}
                             >
-                                아니요
-                            </Button>
-                            <Button
+                                취소
+                            </button>
+                            <button
                                 type="button"
-                                buttonSize="small"
-                                buttonColor="danger"
+                                className={adminStyles.confirmDeleteButton}
                                 disabled={isDeleting}
                                 onClick={handleDeleteNotice}
-                                className={styles.delete}
                             >
-                                {isDeleting ? "삭제 중..." : "삭제"}
-                            </Button>
+                                {isDeleting ? "삭제 중..." : "삭제하기"}
+                            </button>
                         </div>
-                    </div>
-                </div>
+                    </>
+                </ModalOverlay>
             )}
         </div>
     );
