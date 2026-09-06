@@ -1,7 +1,7 @@
 import styles from "./Header.module.css";
 import Logo from "../../../assets/images/logo.png";
 import { useEffect, useState } from "react";
-import { Link, useLocation, useNavigate } from "react-router-dom";
+import { Link, useLocation } from "react-router-dom";
 import authStore from "../../../store/authStore";
 import useUnreadChatCount from "../../../hooks/useUnreadChatCount";
 import TeamRequiredModal from "../modal/TeamRequiredModal";
@@ -48,7 +48,6 @@ const setCachedTeamStatus = (cacheKey, value) => {
 
 const Header = () => {
     const location = useLocation();
-    const navigate = useNavigate();
     const user = authStore((state) => state.user);
 
     const hasUser = Boolean(user);
@@ -65,6 +64,7 @@ const Header = () => {
     const [adminAllTeamCreated, setAdminAllTeamCreated] = useState(null);
     const [studentTeamCreated, setStudentTeamCreated] = useState(null);
     const [teamRequiredModal, setTeamRequiredModal] = useState(null);
+    const [menuOpen, setMenuOpen] = useState(false);
 
     const { hasUnreadChat } = useUnreadChatCount({
         enabled: hasUser,
@@ -184,6 +184,18 @@ const Header = () => {
         };
     }, [hasUser, isAdmin, teamStatusCacheKey]);
 
+    // 드로어가 열려 있는 동안은 본문 스크롤을 막는다 (닫기는 링크 클릭에서 처리)
+    useEffect(() => {
+        if (!menuOpen) return undefined;
+
+        const previousOverflow = document.body.style.overflow;
+        document.body.style.overflow = "hidden";
+
+        return () => {
+            document.body.style.overflow = previousOverflow;
+        };
+    }, [menuOpen]);
+
     const makeHeaderName = (user) => {
         if (!user) return "";
 
@@ -221,116 +233,138 @@ const Header = () => {
         });
     };
 
+    const navItems = !hasUser
+        ? []
+        : isAdmin
+          ? [
+                { to: adminTeamPath, label: adminTeamLabel },
+                {
+                    to: "/admin/chat",
+                    label: "채팅 관리",
+                    badge: true,
+                    guardMessage:
+                        "팀 생성이 완료되면 팀별 채팅방을 확인할 수 있습니다.",
+                },
+                {
+                    to: "/admin/log",
+                    label: "캡스톤 일지",
+                    guardMessage:
+                        "팀 생성이 완료되면 팀별 캡스톤 일지를 확인할 수 있습니다.",
+                },
+                { to: "/admin/student", label: "학생 관리" },
+                { to: "/admin/notice", label: "공지" },
+            ]
+          : [
+                {
+                    to: "/user/project",
+                    label: "프로젝트",
+                    guardMessage:
+                        "팀 생성이 완료되면 프로젝트 정보를 작성할 수 있습니다.",
+                },
+                {
+                    to: "/user/chat",
+                    label: "팀 채팅",
+                    badge: true,
+                    guardMessage:
+                        "팀 생성이 완료되면 팀 채팅을 사용할 수 있습니다.",
+                },
+                {
+                    to: "/user/log",
+                    label: "캡스톤 일지",
+                    guardMessage:
+                        "팀 생성이 완료되면 캡스톤 일지를 작성할 수 있습니다.",
+                },
+                { to: "/user/notice", label: "공지" },
+            ];
+
+    const handleNavClick = (event, guardMessage) => {
+        setMenuOpen(false);
+
+        if (guardMessage && teamCreated === false) {
+            showTeamRequiredModal(event, guardMessage);
+        }
+    };
+
+    const renderNavLink = (item, className) => (
+        <Link
+            key={item.to + item.label}
+            to={item.to}
+            className={`${className} ${
+                location.pathname.startsWith(item.to) ? styles.navLinkActive : ""
+            }`}
+            onClick={(event) => handleNavClick(event, item.guardMessage)}
+        >
+            {item.label}
+            {item.badge && hasUnreadChat && (
+                <span
+                    className={styles.chatUnreadDot}
+                    aria-label="읽지 않은 채팅"
+                />
+            )}
+        </Link>
+    );
+
     return (
-        <div className={styles.header}>
-            <Link to={logoPath}>
-                <img className={styles.logo} src={Logo} alt="로고" />
-            </Link>
+        <header className={styles.header}>
+            <div className={styles.inner}>
+                <Link to={logoPath} className={styles.logoLink}>
+                    <img className={styles.logo} src={Logo} alt="로고" />
+                </Link>
 
-            <nav className={styles.nav}>
-                {hasUser && isAdmin ? (
-                    <>
-                        <Link to={adminTeamPath} className={styles.teamNavLink}>
-                            {adminTeamLabel}
-                        </Link>
-                        <Link
-                            to="/admin/chat"
-                            className={styles.navLinkWithBadge}
-                            onClick={(event) => {
-                                if (teamCreated === false) {
-                                    showTeamRequiredModal(
-                                        event,
-                                        "팀 생성이 완료되면 팀별 채팅방을 확인할 수 있습니다."
-                                    );
-                                }
-                            }}
-                        >
-                            채팅 관리
-                            {hasUnreadChat && (
-                                <span
-                                    className={styles.chatUnreadDot}
-                                    aria-label="읽지 않은 채팅"
-                                />
-                            )}
-                        </Link>{" "}
-                        <Link
-                            to="/admin/log"
-                            className={styles.underlineNavLink}
-                            onClick={(event) => {
-                                if (teamCreated === false) {
-                                    showTeamRequiredModal(
-                                        event,
-                                        "팀 생성이 완료되면 팀별 캡스톤 일지를 확인할 수 있습니다."
-                                    );
-                                }
-                            }}
-                        >
-                            캡스톤 일지
-                        </Link>
-                        <Link to="/admin/student">학생 관리</Link>
-                        <Link to="/admin/notice">공지</Link>
-                    </>
-                ) : hasUser ? (
-                    <>
-                        <Link
-                            to="/user/project"
-                            onClick={(event) => {
-                                if (teamCreated === false) {
-                                    showTeamRequiredModal(
-                                        event,
-                                        "팀 생성이 완료되면 프로젝트 정보를 작성할 수 있습니다."
-                                    );
-                                }
-                            }}
-                        >
-                            프로젝트
-                        </Link>
-                        <Link
-                            to="/user/chat"
-                            className={styles.navLinkWithBadge}
-                            onClick={(event) => {
-                                if (teamCreated === false) {
-                                    showTeamRequiredModal(
-                                        event,
-                                        "팀 생성이 완료되면 팀 채팅을 사용할 수 있습니다."
-                                    );
-                                }
-                            }}
-                        >
-                            팀 채팅
-                            {hasUnreadChat && (
-                                <span
-                                    className={styles.chatUnreadDot}
-                                    aria-label="읽지 않은 채팅"
-                                />
-                            )}
-                        </Link>
-                        <Link
-                            to="/user/log"
-                            className={styles.underlineNavLink}
-                            onClick={(event) => {
-                                if (teamCreated === false) {
-                                    showTeamRequiredModal(
-                                        event,
-                                        "팀 생성이 완료되면 캡스톤 일지를 작성할 수 있습니다."
-                                    );
-                                }
-                            }}
-                        >
-                            캡스톤 일지
-                        </Link>
-                        <Link to="/user/notice">공지</Link>
-                    </>
-                ) : null}
-            </nav>
+                <nav className={styles.nav}>
+                    {navItems.map((item) =>
+                        renderNavLink(item, styles.navLink)
+                    )}
+                </nav>
 
-            <div className={styles.userSlot}>
-                {hasUser && (
-                    <Link to={isAdmin ? "/admin/profile" : "/user/profile"}>
-                        <p className={styles.user}>{displayName}</p>
-                    </Link>
-                )}
+                <div className={styles.actions}>
+                    {hasUser && (
+                        <Link
+                            to={isAdmin ? "/admin/profile" : "/user/profile"}
+                            className={styles.userLink}
+                        >
+                            <span className={styles.user}>{displayName}</span>
+                        </Link>
+                    )}
+
+                    {navItems.length > 0 && (
+                        <button
+                            type="button"
+                            className={styles.menuButton}
+                            aria-label={menuOpen ? "메뉴 닫기" : "메뉴 열기"}
+                            aria-expanded={menuOpen}
+                            onClick={() => setMenuOpen((open) => !open)}
+                        >
+                            <span
+                                className={`${styles.menuIcon} ${
+                                    menuOpen ? styles.menuIconOpen : ""
+                                }`}
+                            />
+                        </button>
+                    )}
+                </div>
             </div>
+
+            {navItems.length > 0 && (
+                <>
+                    <div
+                        className={`${styles.drawerOverlay} ${
+                            menuOpen ? styles.drawerOverlayOpen : ""
+                        }`}
+                        onClick={() => setMenuOpen(false)}
+                    />
+                    <nav
+                        className={`${styles.drawer} ${
+                            menuOpen ? styles.drawerOpen : ""
+                        }`}
+                        aria-hidden={!menuOpen}
+                    >
+                        {navItems.map((item) =>
+                            renderNavLink(item, styles.drawerLink)
+                        )}
+                    </nav>
+                </>
+            )}
 
             {teamRequiredModal && (
                 <TeamRequiredModal
@@ -339,8 +373,7 @@ const Header = () => {
                     onClose={() => setTeamRequiredModal(null)}
                 />
             )}
-
-        </div>
+        </header>
     );
 };
 

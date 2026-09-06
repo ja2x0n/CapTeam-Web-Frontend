@@ -1,47 +1,43 @@
+// Design/notice-list.html 반영. 카드 → 구분선 리스트 로우.
+import { formatCreatedAt, stripMarkdown, truncateText } from "../../../utils/format";
 import styles from "./NoticeItem.module.css";
-import { formatCreatedAt } from "../../../utils/format";
 
 const NoticeItem = ({ notice }) => {
-    // 글자수 100 글자 넘어가면 ... 처리하는 로직
-    const truncate = (str, n) => {
-        return str?.length > n ? str.substr(0, n - 1) + "..." : str;
-    };
-
-    const removeMarkdown = (text = "") => {
-        return text
-            .replace(/```[\s\S]*?```/g, "")
-            .replace(/`([^`]+)`/g, "$1")
-            .replace(/!\[[^\]]*\]\([^)]*\)/g, "")
-            .replace(/\[([^\]]+)\]\([^)]*\)/g, "$1")
-            .replace(/#{1,6}\s?/g, "")
-            .replace(/(\*\*|__)(.*?)\1/g, "$2")
-            .replace(/(\*|_)(.*?)\1/g, "$2")
-            .replace(/^>\s?/gm, "")
-            .replace(/^[-*+]\s+/gm, "")
-            .replace(/^\d+\.\s+/gm, "")
-            .replace(/\n+/g, " ")
-            .trim();
-    };
     return (
         <li className={styles.item}>
-            <div className={styles.titleArea}>
-                {notice.important === "IMPORTANT" && (
-                    <span className={styles.tag}>중요</span>
+            <div className={styles.main}>
+                <div className={styles.titleRow}>
+                    {notice.important === "IMPORTANT" && (
+                        <span className={styles.tag}>중요</span>
+                    )}
+                    <h3 className={styles.title}>{notice.title}</h3>
+                </div>
+
+                {notice.content && (
+                    <p className={styles.content}>
+                        {truncateText(stripMarkdown(notice.content), 100)}
+                    </p>
                 )}
-                <h3 className={styles.title}>{notice.title}</h3>
-            </div>
-            {notice.content && (
-                <p className={styles.content}>
-                    {/* truncate 함수로 감싸서 100글자 넘으면 ... 처리 */}
-                    <span>{truncate(removeMarkdown(notice.content), 100)}</span>
-                </p>
-            )}
-            <div className={styles.meta}>
-                <p className={styles.writer}>{notice.writer}</p>
-                <p className={styles.date}>
-                    {formatCreatedAt(notice.createdAt)}
+
+                <p className={styles.meta}>
+                    {notice.writer} · {formatCreatedAt(notice.createdAt)}
                 </p>
             </div>
+
+            <svg
+                className={styles.chevron}
+                width="20"
+                height="20"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="1.8"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                aria-hidden="true"
+            >
+                <path d="m9 18 6-6-6-6" />
+            </svg>
         </li>
     );
 };

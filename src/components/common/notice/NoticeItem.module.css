@@ -1,63 +1,79 @@
 .item {
     display: flex;
-    flex-direction: column;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 32px;
+    padding: 28px 12px;
     border-bottom: 1px solid var(--color-border);
-    padding: 18px 20px;
-    width: 100%;
-    gap: 10px;
-    cursor: pointer;
-    border-radius: var(--border-radius-sm);
-    transition: var(--transition);
+    transition: background-color 0.15s ease;
 }
 
 .item:hover {
-    background-color: var(--color-bg-hover);
+    background-color: var(--color-bg-secondary);
 }
 
-.titleArea {
+.main {
+    min-width: 0;
+}
+
+.titleRow {
     display: flex;
+    flex-wrap: wrap;
     align-items: center;
     gap: 10px;
 }
 
-.meta {
-    display: flex;
-    align-items: center;
-    gap: 18px;
-}
-
 .tag {
-    background-color: var(--color-primary);
-    padding: 4px 10px;
-    justify-content: center;
-    display: flex;
-    color: white;
+    padding: 2px 8px;
     border-radius: var(--border-radius-sm);
+    background-color: var(--color-primary-bg);
     font-size: var(--font-size-sm);
-    font-weight: var(--font-weight-semibold);
+    font-weight: var(--font-weight-bold);
+    color: var(--color-primary-text);
 }
 
 .title {
-    font-size: var(--font-size-2xl);
+    font-size: 20px;
     font-weight: var(--font-weight-bold);
-    color: var(--color-text-primary);
+    line-height: 1.4;
 }
 
 .content {
+    max-width: 48rem;
+    margin-top: 8px;
     font-size: var(--font-size-lg);
+    line-height: 1.6;
     color: var(--color-text-secondary);
-    font-weight: var(--font-weight-medium);
-    line-height: 1.5;
 }
 
-.writer {
-    font-size: var(--font-size-lg);
-    font-weight: var(--font-weight-semibold);
-    color: var(--color-text-primary);
-}
-
-.date {
+.meta {
+    margin-top: 12px;
     font-size: var(--font-size-md);
-    color: var(--color-text-secondary);
-    font-weight: var(--font-weight-medium);
+    color: var(--color-text-muted);
+}
+
+.chevron {
+    flex-shrink: 0;
+    margin-top: 6px;
+    color: var(--color-text-muted);
+    transition: transform 0.15s ease;
+}
+
+.item:hover .chevron {
+    transform: translateX(2px);
+}
+
+@media (max-width: 900px) {
+    .item {
+        gap: 16px;
+        padding: 20px 12px;
+    }
+
+    .title {
+        font-size: 18px;
+    }
+
+    .content {
+        font-size: 15px;
+    }
 }

@@ -1,177 +1,234 @@
 .header {
-    display: grid;
-    grid-template-columns: auto minmax(0, 1fr) auto;
-    width: 100%;
-    align-items: center;
-    column-gap: clamp(16px, 3vw, 40px);
-    padding: 0 clamp(20px, 3vw, 40px);
-    height: var(--header-height);
+    position: sticky;
+    top: 0;
+    z-index: 30;
     border-bottom: 1px solid var(--color-border);
+    background-color: rgba(255, 255, 255, 0.85);
+    backdrop-filter: blur(8px);
 }
 
-.header > a {
+.inner {
+    position: relative;
+    display: flex;
+    align-items: center;
+    height: var(--header-height);
+    max-width: var(--max-width);
+    margin: 0 auto;
+    padding: 0 var(--page-padding);
+}
+
+.logoLink {
     display: inline-flex;
     align-items: center;
     flex-shrink: 0;
-    min-width: 0;
 }
 
 .logo {
-    width: clamp(56px, 6vw, 80px);
-    height: clamp(56px, 6vw, 80px);
+    width: 56px;
+    height: 56px;
     object-fit: contain;
 }
 
+/* 내비는 화면 정중앙 고정 — 로고/사용자 이름 길이에 흔들리지 않게 */
 .nav {
-    min-width: 0;
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    gap: clamp(20px, 5vw, 92px);
-    overflow: hidden;
-    font-size: clamp(14px, 1.05vw, 16px);
-    font-weight: var(--font-weight-semibold);
-    white-space: nowrap;
-}
-
-.nav a {
-    min-width: 0;
-    overflow: hidden;
-    color: var(--color-text-primary);
-    text-overflow: ellipsis;
-    white-space: nowrap;
-    transition: color var(--transition);
-}
-
-.nav a:hover {
-    color: var(--color-primary);
-}
-
-.nav a.underlineNavLink {
-    overflow: visible;
-    position: relative;
-}
-
-.underlineNavLink::after {
-    content: "";
     position: absolute;
-    left: 0;
-    right: 0;
-    bottom: -6px;
-    height: 2px;
-    border-radius: 1px;
-    background-color: var(--color-primary);
+    left: 50%;
+    transform: translateX(-50%);
+    display: flex;
+    align-items: center;
+    gap: 40px;
+    white-space: nowrap;
 }
 
-.teamNavLink {
-    display: inline-flex;
-    justify-content: center;
-    min-width: 70px;
-}
-
-.navLinkWithBadge {
+.navLink {
     position: relative;
     display: inline-flex;
     align-items: center;
     gap: 6px;
-    flex-shrink: 0;
-    overflow: visible;
+    font-size: 17px;
+    font-weight: var(--font-weight-medium);
+    color: var(--color-text-muted);
+    transition: color 0.15s ease;
+}
+
+.navLink:hover {
+    color: var(--color-text-primary);
+}
+
+.navLinkActive {
+    color: var(--color-text-primary);
+    font-weight: var(--font-weight-semibold);
 }
 
 .chatUnreadDot {
     flex: 0 0 auto;
-    display: inline-flex;
-    width: 8px;
-    height: 8px;
+    width: 6px;
+    height: 6px;
     border-radius: 50%;
     background-color: var(--color-primary);
 }
 
-.userSlot {
+.actions {
     display: flex;
-    justify-content: flex-end;
+    align-items: center;
+    gap: 8px;
+    margin-left: auto;
     min-width: 0;
 }
 
-.userSlot a {
+.userLink {
     min-width: 0;
     max-width: clamp(96px, 14vw, 180px);
 }
 
 .user {
-    color: var(--color-primary);
+    display: block;
     overflow: hidden;
-    font-size: clamp(14px, 1.05vw, 16px);
+    font-size: 15px;
     font-weight: var(--font-weight-semibold);
+    color: var(--color-text-secondary);
     text-align: right;
     text-overflow: ellipsis;
     white-space: nowrap;
+    transition: color 0.15s ease;
 }
 
-@media (max-width: 1180px) {
-    .header {
-        column-gap: 18px;
-        padding: 0 24px;
-    }
-
-    .nav {
-        justify-content: flex-start;
-        gap: 28px;
-        overflow-x: auto;
-        scrollbar-width: none;
-    }
-
-    .nav::-webkit-scrollbar {
-        display: none;
-    }
-
-    .nav a {
-        flex: 0 0 auto;
-    }
-
-    .userSlot a {
-        max-width: 140px;
-    }
+.userLink:hover .user {
+    color: var(--color-text-primary);
 }
 
-@media (max-width: 1024px) {
-    .nav {
-        gap: 24px;
-    }
+/* --- 모바일 드로어 --- */
+
+.menuButton {
+    display: none;
+    place-items: center;
+    width: 40px;
+    height: 40px;
+    border: none;
+    border-radius: 50%;
+    background: none;
+    color: var(--color-text-primary);
 }
 
-@media (max-width: 768px) {
-    .header {
-        grid-template-columns: auto minmax(0, 1fr);
-        height: auto;
-        min-height: var(--header-height);
-        padding: 14px 16px 10px;
-        row-gap: 10px;
+.menuButton:hover {
+    background-color: var(--color-bg-secondary);
+}
+
+.menuIcon,
+.menuIcon::before,
+.menuIcon::after {
+    display: block;
+    width: 18px;
+    height: 2px;
+    border-radius: 1px;
+    background-color: currentColor;
+    transition: transform 0.2s var(--ease-out), opacity 0.2s var(--ease-out);
+}
+
+.menuIcon {
+    position: relative;
+}
+
+.menuIcon::before,
+.menuIcon::after {
+    content: "";
+    position: absolute;
+    left: 0;
+    top: 0;
+}
+
+.menuIcon::before {
+    transform: translateY(-6px);
+}
+
+.menuIcon::after {
+    transform: translateY(6px);
+}
+
+.menuIconOpen {
+    background-color: transparent;
+}
+
+.menuIconOpen::before {
+    transform: rotate(45deg);
+}
+
+.menuIconOpen::after {
+    transform: rotate(-45deg);
+}
+
+.drawerOverlay {
+    position: fixed;
+    inset: var(--header-height) 0 0;
+    z-index: 20;
+    background-color: rgba(0, 0, 0, 0.35);
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity var(--duration-overlay) ease;
+}
+
+.drawer {
+    position: fixed;
+    top: var(--header-height);
+    left: 0;
+    right: 0;
+    z-index: 21;
+    display: flex;
+    flex-direction: column;
+    padding: 8px 20px 20px;
+    background-color: var(--color-bg);
+    border-bottom: 1px solid var(--color-border);
+    opacity: 0;
+    transform: translateY(-8px);
+    pointer-events: none;
+    visibility: hidden;
+    transition: opacity var(--duration-overlay) var(--ease-out),
+        transform var(--duration-overlay) var(--ease-out),
+        visibility var(--duration-overlay);
+}
+
+.drawerLink {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 16px 4px;
+    font-size: 17px;
+    font-weight: var(--font-weight-medium);
+    color: var(--color-text-secondary);
+}
+
+.drawerLink + .drawerLink {
+    border-top: 1px solid var(--color-border);
+}
+
+@media (max-width: 900px) {
+    .inner {
+        padding: 0 20px;
     }
 
     .logo {
-        width: 52px;
-        height: 52px;
+        width: 48px;
+        height: 48px;
     }
 
     .nav {
-        grid-column: 1 / -1;
-        order: 3;
-        width: 100%;
-        gap: 18px;
-        overflow-x: auto;
-        padding: 8px 0 2px;
+        display: none;
     }
 
-    .userSlot {
-        min-width: 0;
+    .menuButton {
+        display: grid;
+        position: relative;
     }
 
-    .userSlot a {
-        max-width: calc(100vw - 96px);
+    .drawerOverlay.drawerOverlayOpen {
+        opacity: 1;
+        pointer-events: auto;
     }
 
-    .user {
-        font-size: var(--font-size-md);
+    .drawer.drawerOpen {
+        opacity: 1;
+        transform: none;
+        pointer-events: auto;
+        visibility: visible;
     }
 }

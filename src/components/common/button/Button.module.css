@@ -1,13 +1,23 @@
 .button {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
     cursor: pointer;
     border: none;
     white-space: nowrap;
     font-family: var(--font-family);
     font-weight: var(--font-weight-semibold);
-    transition: var(--transition);
+    border-radius: 8px;
+    transition: background-color 0.15s ease, color 0.15s ease,
+        border-color 0.15s ease, transform 0.1s ease;
 }
+
+.button:not(:disabled):active {
+    transform: scale(0.98);
+}
+
 .button:disabled {
-    opacity: 0.5;
+    opacity: 0.4;
     cursor: not-allowed;
 }
 
@@ -20,58 +30,63 @@
     background-color: var(--color-primary-dark);
 }
 
+/* 보조 강조 — 연한 브랜드 배경 + 브랜드 텍스트 */
+.weak {
+    background-color: var(--color-primary-bg);
+    color: var(--color-primary-text);
+}
+
+.weak:hover:not(:disabled) {
+    background-color: #dcefe4;
+}
+
 .secondary {
-    background-color: white;
-    color: var(--color-primary);
+    background-color: #ffffff;
+    color: var(--color-primary-text);
     border: 1px solid var(--color-primary);
 }
 
 .secondary:hover:not(:disabled) {
-    border-color: var(--color-primary-dark);
-    background-color: var(--color-primary-dark);
-    color: #ffffff;
+    background-color: var(--color-primary-bg);
 }
 
 .ghost {
-    background-color: white;
+    background-color: transparent;
     color: var(--color-text-secondary);
     border: 1px solid var(--color-border);
 }
 
 .ghost:hover:not(:disabled) {
-    border-color: var(--color-text-secondary);
-    background-color: var(--color-text-secondary);
-    color: #ffffff;
+    background-color: var(--color-bg-secondary);
+    color: var(--color-text-primary);
 }
 
 .danger {
-    background-color: white;
+    background-color: #ffffff;
     color: var(--color-danger);
-    border: 1px solid var(--color-danger);
+    border: 1px solid var(--color-border);
 }
 
 .danger:hover:not(:disabled) {
-    border-color: var(--color-danger-dark);
-    background-color: var(--color-danger-dark);
-    color: #ffffff;
+    border-color: var(--color-danger);
+    background-color: #fff2f3;
 }
 
 .large {
+    height: 48px;
     font-size: var(--font-size-lg);
-    padding: 14px 24px;
+    padding: 0 28px;
     width: 100%;
-    border-radius: var(--border-radius-sm);
 }
 
 .medium {
-    font-size: var(--font-size-md);
-    padding: 10px 50px;
-    border-radius: var(--border-radius-sm);
+    height: 44px;
+    font-size: var(--font-size-lg);
+    padding: 0 28px;
 }
 
 .small {
-    font-size: var(--font-size-sm);
-    font-weight: var(--font-weight-bold);
-    padding: 8px 16px;
-    border-radius: var(--border-radius-sm);
+    height: 36px;
+    font-size: var(--font-size-md);
+    padding: 0 16px;
 }

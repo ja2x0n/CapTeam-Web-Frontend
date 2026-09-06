@@ -1,0 +1,22 @@
+/* 등장·퇴장 모션. 배경·크기는 각 모달이 넘기는 className이 맡는다. */
+
+.overlay {
+    opacity: 0;
+    transition: opacity var(--duration-overlay) ease;
+}
+
+.overlayShown {
+    opacity: 1;
+}
+
+.panel {
+    opacity: 0;
+    transform: translateY(16px) scale(0.99);
+    transition: opacity var(--duration-modal) var(--ease-out),
+        transform var(--duration-modal) var(--ease-out);
+}
+
+.panelShown {
+    opacity: 1;
+    transform: none;
+}
