@@ -1,14 +1,39 @@
+// Design/team-manage.html 반영. 카드 격자 → 세로 리스트.
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useSearchParams } from "react-router-dom";
 import Header from "../../../components/common/header/Header";
-import AdminTeamCard from "../../../components/admin/team/AdminTeamCard";
 import AdminTeamDetailModal from "../../../components/admin/team/AdminTeamDetailModal";
+import Skeleton from "../../../components/common/skeleton/Skeleton";
+import EmptyState from "../../../components/common/empty/EmptyState";
+import useInView from "../../../hooks/useInView";
 import {
     requestAdminTeamDetail,
     requestAdminTeamList,
 } from "../../../api/teamApi";
-import useDelayedLoading from "../../../hooks/useDelayedLoading";
+import { gradeLabels } from "../../../constants/team";
+import {
+    getRoleCountSummary,
+    getTeamDisplayName,
+    hasProjectInfo,
+} from "../../../utils/teamRecommendation";
 import styles from "./AdminTeamManage.module.css";
+
+const GRADE_FILTERS = [
+    { key: "all", label: "전체 팀" },
+    { key: "GRADE_2", label: "2학년" },
+    { key: "GRADE_3", label: "3학년" },
+];
+
+const ListSkeleton = () => (
+    <div className={styles.list}>
+        {[0, 1, 2].map((index) => (
+            <div key={index} className={styles.skeletonRow}>
+                <Skeleton width={224} height={24} />
+                <Skeleton width={320} height={20} style={{ marginTop: 12 }} />
+            </div>
+        ))}
+    </div>
+);
 
 const AdminTeamManage = () => {
     const [teams, setTeams] = useState([]);
@@ -19,11 +44,10 @@ const AdminTeamManage = () => {
     const [isDetailLoading, setIsDetailLoading] = useState(false);
     const [error, setError] = useState("");
     const [modalError, setModalError] = useState("");
-    const showLoading = useDelayedLoading(isLoading);
-    const showDetailLoading = useDelayedLoading(isDetailLoading);
     const [searchParams] = useSearchParams();
     const targetTeamName = searchParams.get("teamName");
     const openedQueryTeamNameRef = useRef(null);
+
     useEffect(() => {
         const getTeams = async () => {
             try {
@@ -40,16 +64,14 @@ const AdminTeamManage = () => {
         getTeams();
     }, []);
 
-    const counts = useMemo(() => {
-        const grade2 = teams.filter((team) => team.grade === "GRADE_2").length;
-        const grade3 = teams.filter((team) => team.grade === "GRADE_3").length;
-
-        return {
-            total: teams.length,
-            grade2,
-            grade3,
-        };
-    }, [teams]);
+    const counts = useMemo(
+        () => ({
+            all: teams.length,
+            GRADE_2: teams.filter((team) => team.grade === "GRADE_2").length,
+            GRADE_3: teams.filter((team) => team.grade === "GRADE_3").length,
+        }),
+        [teams]
+    );
 
     const filteredTeams = useMemo(() => {
         const keyword = searchText.trim().toLowerCase();
@@ -71,6 +93,16 @@ const AdminTeamManage = () => {
         });
     }, [searchText, selectedGrade, teams]);
 
+    // 필터·검색이 바뀔 때마다 리스트 진입 모션을 다시 재생한다
+    const listRef = useInView({
+        replayKey: `${isLoading}-${selectedGrade}-${searchText}`,
+    });
+
+    const planWrittenCount = useMemo(
+        () => teams.filter(hasProjectInfo).length,
+        [teams]
+    );
+
     const handleOpenTeam = async (teamId) => {
         try {
             setSelectedTeam(null);
@@ -85,6 +117,7 @@ const AdminTeamManage = () => {
             setIsDetailLoading(false);
         }
     };
+
     useEffect(() => {
         if (isLoading || !targetTeamName) return;
         if (openedQueryTeamNameRef.current === targetTeamName) return;
@@ -107,101 +140,194 @@ const AdminTeamManage = () => {
         setIsDetailLoading(false);
     };
 
+    const resetFilters = () => {
+        setSearchText("");
+        setSelectedGrade("all");
+    };
+
     return (
         <div className={styles.page}>
             <Header />
 
             <main className={styles.body}>
-                <div className={styles.pageHeader}>
-                    <h1>팀 관리</h1>
-                    <p>팀별 프로젝트 정보와 팀원 구성을 확인할 수 있습니다.</p>
+                <section className={styles.pageHead}>
+                    <div>
+                        <p className={styles.eyebrow}>팀 관리</p>
+                        <h1 className={styles.headline}>
+                            확정된 팀을
+                            <br />한눈에 확인해요
+                        </h1>
+                        <p className={styles.subline}>
+                            팀을 누르면 프로젝트 기획서, 팀원 구성, AI 팀 분석을
+                            함께 볼 수 있어요.
+                        </p>
+                    </div>
+
+                    {!isLoading && teams.length > 0 && (
+                        <div className={styles.statusPanel}>
+                            <p className={styles.statusLabel}>
+                                기획서 작성 완료
+                            </p>
+                            <p className={styles.statusValue}>
+                                {planWrittenCount}{" "}
+                                <span>/ {teams.length}팀</span>
+                            </p>
+                        </div>
+                    )}
+                </section>
+
+                <div className={styles.controls}>
+                    <div className={styles.segments}>
+                        {GRADE_FILTERS.map((filter) => (
+                            <button
+                                key={filter.key}
+                                type="button"
+                                className={`${styles.segment} ${
+                                    selectedGrade === filter.key
+                                        ? styles.segmentOn
+                                        : ""
+                                }`}
+                                onClick={() => setSelectedGrade(filter.key)}
+                                aria-pressed={selectedGrade === filter.key}
+                            >
+                                {filter.label}
+                                <span className={styles.segmentCount}>
+                                    {counts[filter.key]}
+                                </span>
+                            </button>
+                        ))}
+                    </div>
+
+                    <div className={styles.searchBox}>
+                        <svg
+                            className={styles.searchIcon}
+                            width="18"
+                            height="18"
+                            viewBox="0 0 24 24"
+                            fill="none"
+                            stroke="currentColor"
+                            strokeWidth="1.9"
+                            strokeLinecap="round"
+                            aria-hidden="true"
+                        >
+                            <circle cx="11" cy="11" r="7" />
+                            <path d="m20 20-3.5-3.5" />
+                        </svg>
+                        <input
+                            type="text"
+                            className={styles.search}
+                            value={searchText}
+                            placeholder="팀명 또는 학생 이름 검색"
+                            onChange={(event) =>
+                                setSearchText(event.target.value)
+                            }
+                        />
+                    </div>
                 </div>
 
-                <section className={styles.summaryRow}>
-                    <button
-                        type="button"
-                        className={`${styles.summaryItem} ${
-                            selectedGrade === "all" ? styles.active : ""
-                        }`}
-                        onClick={() => setSelectedGrade("all")}
-                        aria-pressed={selectedGrade === "all"}
-                    >
-                        <span className={styles.summaryLabel}>전체 팀</span>
-                        <strong className={styles.summaryValue}>
-                            {!isLoading && counts.total}
-                        </strong>
-                    </button>
-
-                    <button
-                        type="button"
-                        className={`${styles.summaryItem} ${
-                            selectedGrade === "GRADE_2" ? styles.active : ""
-                        }`}
-                        onClick={() => setSelectedGrade("GRADE_2")}
-                        aria-pressed={selectedGrade === "GRADE_2"}
-                    >
-                        <span className={styles.summaryLabel}>2학년 팀</span>
-                        <strong className={styles.summaryValue}>
-                            {!isLoading && counts.grade2}
-                        </strong>
-                    </button>
-
-                    <button
-                        type="button"
-                        className={`${styles.summaryItem} ${
-                            selectedGrade === "GRADE_3" ? styles.active : ""
-                        }`}
-                        onClick={() => setSelectedGrade("GRADE_3")}
-                        aria-pressed={selectedGrade === "GRADE_3"}
-                    >
-                        <span className={styles.summaryLabel}>3학년 팀</span>
-                        <strong className={styles.summaryValue}>
-                            {!isLoading && counts.grade3}
-                        </strong>
-                    </button>
-                </section>
-
-                <section className={styles.controlRow}>
-                    <input
-                        type="text"
-                        className={styles.search}
-                        value={searchText}
-                        placeholder="팀명 또는 학생 이름을 검색하세요"
-                        onChange={(e) => setSearchText(e.target.value)}
-                    />
-                </section>
-
-                {error && <p className={styles.errorText}>{error}</p>}
-
                 {isLoading ? (
-                    <p className={styles.emptyText}>
-                        {showLoading && "팀 목록을 불러오는 중입니다."}
-                    </p>
+                    <ListSkeleton />
+                ) : error ? (
+                    <EmptyState
+                        variant="error"
+                        title="팀 목록을 불러오지 못했어요"
+                        description={error}
+                    />
+                ) : filteredTeams.length === 0 ? (
+                    <EmptyState
+                        title="조건에 맞는 팀이 없어요"
+                        description="검색어를 지우거나 다른 학년을 골라보세요."
+                        action={
+                            <button
+                                type="button"
+                                className={styles.resetButton}
+                                onClick={resetFilters}
+                            >
+                                필터 초기화
+                            </button>
+                        }
+                    />
                 ) : (
-                    <section className={styles.teamGrid}>
-                        {filteredTeams.map((team) => (
-                            <AdminTeamCard
-                                key={team.teamId}
-                                team={team}
-                                onClick={() => handleOpenTeam(team.teamId)}
-                            />
-                        ))}
-                    </section>
-                )}
+                    <div className={styles.list} ref={listRef}>
+                        {filteredTeams.map((team) => {
+                            const projectWritten = hasProjectInfo(team);
+                            const memberCount = team.members?.length ?? 0;
 
-                {!isLoading && !error && filteredTeams.length === 0 && (
-                    <p className={styles.emptyText}>
-                        조회할 팀 정보가 없습니다.
-                    </p>
+                            return (
+                                <button
+                                    key={team.teamId}
+                                    type="button"
+                                    data-reveal
+                                    className={styles.row}
+                                    onClick={() => handleOpenTeam(team.teamId)}
+                                >
+                                    <span className={styles.rowMain}>
+                                        <span className={styles.rowTitleLine}>
+                                            <span className={styles.rowTitle}>
+                                                {getTeamDisplayName(
+                                                    team,
+                                                    projectWritten
+                                                )}
+                                            </span>
+                                            <span
+                                                className={styles.gradeBadge}
+                                            >
+                                                {gradeLabels[team.grade] ||
+                                                    team.grade}
+                                            </span>
+                                            <span
+                                                className={
+                                                    projectWritten
+                                                        ? styles.planDone
+                                                        : styles.planPending
+                                                }
+                                            >
+                                                {projectWritten
+                                                    ? "기획서 작성 완료"
+                                                    : "기획서 작성 전"}
+                                            </span>
+                                        </span>
+                                        <span className={styles.rowRoles}>
+                                            {getRoleCountSummary(
+                                                team.roleCount
+                                            )}
+                                        </span>
+                                        <span className={styles.rowMeta}>
+                                            {projectWritten
+                                                ? `${team.teamName} · 팀원 ${memberCount}명`
+                                                : `팀원 ${memberCount}명`}
+                                        </span>
+                                    </span>
+
+                                    <svg
+                                        className={styles.chevron}
+                                        width="20"
+                                        height="20"
+                                        viewBox="0 0 24 24"
+                                        fill="none"
+                                        stroke="currentColor"
+                                        strokeWidth="1.8"
+                                        strokeLinecap="round"
+                                        strokeLinejoin="round"
+                                        aria-hidden="true"
+                                    >
+                                        <path d="m9 18 6-6-6-6" />
+                                    </svg>
+                                </button>
+                            );
+                        })}
+                    </div>
                 )}
             </main>
 
-            <AdminTeamDetailModal
-                team={selectedTeam}
-                loading={showDetailLoading}
-                error={modalError}
-                onClose={handleCloseModal}
-            />
+            {(selectedTeam || isDetailLoading || modalError) && (
+                <AdminTeamDetailModal
+                    team={selectedTeam}
+                    loading={isDetailLoading}
+                    error={modalError}
+                    onClose={handleCloseModal}
+                />
+            )}
         </div>
     );
 };

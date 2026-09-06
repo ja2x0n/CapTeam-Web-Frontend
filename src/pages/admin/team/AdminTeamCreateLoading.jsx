@@ -13,6 +13,7 @@ import {
     WAITING_JOB_STATUSES,
     wait,
 } from "../../../utils/matchingJobLock";
+import useInView from "../../../hooks/useInView";
 import styles from "./AdminTeamCreateLoading.module.css";
 
 const STEPS = [
@@ -302,107 +303,164 @@ const AdminTeamCreateLoading = () => {
         };
     }, [grade, navigate, regenerationPrompt, baseVersionId]);
 
+    const contentRef = useInView({
+        replayKey: `${Boolean(pendingSurveyGroups)}-${Boolean(error)}`,
+    });
+
     return (
         <div className={styles.page}>
-            <main className={styles.panel}>
+            <main className={styles.body} ref={contentRef}>
                 {pendingSurveyGroups ? (
-                    <section className={styles.errorCard}>
-                        <span className={styles.errorLabel}>설문 미완료</span>
-                        <h1>팀을 생성할 수 없습니다</h1>
-                        <p>
-                            아래 학생들의 설문 제출이 완료되면 다시 팀을 생성할
-                            수 있습니다.
+                    <section className={styles.narrow}>
+                        <p data-reveal className={styles.errorEyebrow}>
+                            설문 미완료
+                        </p>
+                        <h1 data-reveal className={styles.title}>
+                            아직 팀을 만들 수 없어요
+                        </h1>
+                        <p data-reveal className={styles.sub}>
+                            아래 학생들이 설문을 제출하면 다시 시도할 수 있어요.
                         </p>
 
-                        <div className={styles.pendingGroupList}>
+                        <div className={styles.pendingList}>
                             {pendingSurveyGroups.map((group) => (
-                                <article
-                                    key={group.groupKey}
-                                    className={styles.pendingGroup}
-                                >
+                                <div key={group.groupKey}>
                                     <div
-                                        className={styles.pendingGroupHeader}
+                                        data-reveal
+                                        className={styles.pendingGroupHead}
                                     >
                                         <strong>{group.groupKey}</strong>
                                         <span>{group.students.length}명</span>
                                     </div>
-
-                                    <ul>
-                                        {group.students.map((student) => (
-                                            <li key={student.userId}>
-                                                {student.name}
-                                            </li>
-                                        ))}
-                                    </ul>
-                                </article>
-                            ))}
-                        </div>
-
-                        <button
-                            type="button"
-                            className={styles.retryButton}
-                            onClick={() => navigate("/admin/team-create")}
-                        >
-                            다시 선택하기
-                        </button>
-                    </section>
-                ) : error ? (
-                    <div className={styles.loadingState}>
-                        <h1 className={styles.loadingTitle}>{error}</h1>
-                        <button
-                            type="button"
-                            className={styles.retryButton}
-                            onClick={() => navigate("/admin/team-create")}
-                        >
-                            다시 선택하기
-                        </button>
-                    </div>
-                ) : (
-                    <div className={styles.loadingState}>
-                        <div className={styles.spinner} aria-hidden="true" />
-                        <h1 className={styles.loadingTitle}>
-                            팀이 생성되는 중입니다
-                            <span className={styles.dots} aria-hidden="true" />
-                        </h1>
-                        <p className={styles.loadingSub}>
-                            {gradeLabels[grade]} 설문 데이터를 분석하고
-                            있습니다
-                        </p>
-
-                        <div className={styles.stepTracker}>
-                            {STEPS.map((step, index) => (
-                                <div
-                                    key={step.title}
-                                    className={`${styles.stepRow} ${
-                                        index < activeStepIndex
-                                            ? styles.done
-                                            : index === activeStepIndex
-                                            ? styles.active
-                                            : ""
-                                    }`}
-                                >
-                                    <div className={styles.stepDot}>
-                                        {index < activeStepIndex
-                                            ? "✓"
-                                            : index + 1}
-                                    </div>
-                                    <div className={styles.stepBody}>
-                                        <div className={styles.stepTitle}>
-                                            {step.title}
+                                    {group.students.map((student) => (
+                                        <div
+                                            key={student.userId}
+                                            data-reveal
+                                            className={styles.pendingRow}
+                                        >
+                                            <span>{student.name}</span>
+                                            <span
+                                                className={styles.pendingUserId}
+                                            >
+                                                {student.userId}
+                                            </span>
                                         </div>
-                                        <div className={styles.stepDesc}>
-                                            {step.desc}
-                                        </div>
-                                    </div>
+                                    ))}
                                 </div>
                             ))}
                         </div>
 
-                        <p className={styles.cancelNote}>
-                            창을 닫거나 뒤로 가면 생성 작업이 중단될 수
-                            있습니다.
+                        <div data-reveal className={styles.actions}>
+                            <button
+                                type="button"
+                                className={styles.primaryButton}
+                                onClick={() => navigate("/admin/team-create")}
+                            >
+                                다시 선택하기
+                            </button>
+                            <button
+                                type="button"
+                                className={styles.ghostButton}
+                                onClick={() => navigate("/admin/student")}
+                            >
+                                학생 관리로 가기
+                            </button>
+                        </div>
+                    </section>
+                ) : error ? (
+                    <section className={styles.narrow}>
+                        <p data-reveal className={styles.errorEyebrow}>
+                            생성 실패
                         </p>
-                    </div>
+                        <h1 data-reveal className={styles.title}>
+                            팀을 만들지 못했어요
+                        </h1>
+                        <p data-reveal className={styles.sub}>
+                            {error}
+                        </p>
+                        <div data-reveal className={styles.actions}>
+                            <button
+                                type="button"
+                                className={styles.primaryButton}
+                                onClick={() => navigate("/admin/team-create")}
+                            >
+                                다시 시도하기
+                            </button>
+                            <button
+                                type="button"
+                                className={styles.ghostButton}
+                                onClick={() => navigate("/admin/dashboard")}
+                            >
+                                처음으로
+                            </button>
+                        </div>
+                    </section>
+                ) : (
+                    <section className={styles.running}>
+                        <div className={styles.runningMain}>
+                            <p data-reveal className={styles.runningEyebrow}>
+                                {gradeLabels[grade]} ·{" "}
+                                {regenerationPrompt
+                                    ? "AI 재생성"
+                                    : "AI 자동 배정"}
+                            </p>
+                            <h1 data-reveal className={styles.title}>
+                                팀을 만들고 있어요
+                            </h1>
+                            <p data-reveal className={styles.sub}>
+                                설문 데이터를 분석하는 중이에요. 보통 1~2분 정도
+                                걸려요.
+                            </p>
+
+                            <div data-reveal className={styles.flowBar} />
+
+                            {regenerationPrompt && (
+                                <div data-reveal className={styles.promptBlock}>
+                                    <p className={styles.promptLabel}>
+                                        적용한 조건
+                                    </p>
+                                    <p className={styles.promptText}>
+                                        {regenerationPrompt}
+                                    </p>
+                                </div>
+                            )}
+
+                            <p data-reveal className={styles.runNote}>
+                                창을 닫거나 뒤로 가면 생성이 중단될 수 있어요.
+                                <br />
+                                첫 팀이 만들어지면 바로 검토 화면으로 넘어가요.
+                            </p>
+                        </div>
+
+                        <ol className={styles.steps}>
+                            {STEPS.map((step, index) => (
+                                <li
+                                    key={step.title}
+                                    className={`${styles.step} ${
+                                        index < activeStepIndex
+                                            ? styles.stepDone
+                                            : index === activeStepIndex
+                                              ? styles.stepActive
+                                              : ""
+                                    }`}
+                                >
+                                    <span className={styles.stepMark}>
+                                        {index < activeStepIndex
+                                            ? "✓"
+                                            : index + 1}
+                                    </span>
+                                    <span>
+                                        <span className={styles.stepTitle}>
+                                            {step.title}
+                                        </span>
+                                        <span className={styles.stepDesc}>
+                                            {step.desc}
+                                        </span>
+                                    </span>
+                                </li>
+                            ))}
+                        </ol>
+                    </section>
                 )}
             </main>
         </div>

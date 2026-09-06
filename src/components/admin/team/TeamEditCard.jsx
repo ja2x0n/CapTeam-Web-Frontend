@@ -1,6 +1,6 @@
-import { gradeLabels } from "../../../constants/team";
+// Design/team-edit.html 반영. 카드 뒤집기 → 세로 리스트 + 배정 이유 인라인 펼치기.
+import { levelLabels, roleLabels } from "../../../constants/team";
 import { getRoleSummary } from "../../../utils/teamRecommendation";
-import TeamMemberRow from "./TeamMemberRow";
 import styles from "./TeamEditCard.module.css";
 
 const TeamEditCard = ({
@@ -13,112 +13,104 @@ const TeamEditCard = ({
     onHeaderDoubleClick,
 }) => {
     return (
-        <article className={styles.teamCardShell}>
+        <section className={styles.team}>
+            <div data-reveal className={styles.teamHead}>
+                <h2 className={styles.teamName}>
+                    {teamNumber}팀
+                    <span className={styles.teamSummary}>
+                        {team.members.length}명 · {getRoleSummary(team.members)}
+                    </span>
+                </h2>
+                <button
+                    type="button"
+                    className={styles.reasonToggle}
+                    onClick={onHeaderDoubleClick}
+                    aria-expanded={flipped}
+                >
+                    {flipped ? "배정 이유 접기" : "배정 이유 보기"}
+                </button>
+            </div>
+
+            <div data-reveal className={styles.memberRow}>
+                {team.members.map((member) => {
+                    const isLeader = member.recommendedLeader;
+                    const isSelected =
+                        selectedMember?.recommendationId === team.id &&
+                        selectedMember?.userId === member.userId;
+
+                    return (
+                        <button
+                            key={member.userId}
+                            type="button"
+                            className={`${styles.member} ${
+                                isSelected ? styles.memberSelected : ""
+                            } ${
+                                highlightedUserIds.includes(member.userId)
+                                    ? styles.memberHighlighted
+                                    : ""
+                            }`}
+                            disabled={isLeader}
+                            title={
+                                isLeader
+                                    ? "팀장은 교환할 수 없습니다."
+                                    : undefined
+                            }
+                            onClick={() => onMemberClick(team.id, member.userId)}
+                        >
+                            <span className={styles.memberNameRow}>
+                                <span className={styles.memberName}>
+                                    {member.name}
+                                </span>
+                                {isLeader && (
+                                    <span className={styles.leaderBadge}>
+                                        팀장
+                                    </span>
+                                )}
+                            </span>
+                            <span className={styles.memberMeta}>
+                                {roleLabels[member.studentRole] ||
+                                    member.studentRole}{" "}
+                                ·{" "}
+                                {levelLabels[member.studentLevel] ||
+                                    member.studentLevel ||
+                                    "-"}
+                            </span>
+                            <span className={styles.memberSkill}>
+                                {member.skill || "스택 미입력"}
+                            </span>
+                        </button>
+                    );
+                })}
+            </div>
+
+            {/* 높이 애니메이션을 위해 grid-template-rows 0fr → 1fr */}
             <div
-                className={`${styles.teamCardInner} ${
-                    flipped ? styles.reasonVisible : ""
+                className={`${styles.reasonWrap} ${
+                    flipped ? styles.reasonOpen : ""
                 }`}
             >
-                <div className={styles.teamCardFace}>
-                    <header
-                        className={styles.teamHeader}
-                        onDoubleClick={onHeaderDoubleClick}
-                    >
-                        <div className={styles.teamHeaderTop}>
-                            <div>
-                                <h2 className={styles.teamName}>
-                                    {teamNumber}팀
-                                </h2>
-                                <p className={styles.teamSummary}>
-                                    총 {team.members.length}명 ·{" "}
-                                    {gradeLabels[team.grade] || team.grade}
-                                </p>
-                            </div>
-                            <button
-                                type="button"
-                                className={styles.reasonButton}
-                                onClick={onHeaderDoubleClick}
-                            >
-                                배정 이유
-                            </button>
-                        </div>
-                        <div className={styles.roleSummary}>
-                            <span>{getRoleSummary(team.members)}</span>
-                        </div>
-                    </header>
-
-                    <ul className={styles.memberList}>
-                        {team.members.map((member) => (
-                            <TeamMemberRow
-                                key={member.userId}
-                                member={member}
-                                selected={
-                                    selectedMember?.recommendationId ===
-                                        team.id &&
-                                    selectedMember?.userId === member.userId
-                                }
-                                highlighted={highlightedUserIds.includes(
-                                    member.userId
-                                )}
-                                onClick={() =>
-                                    onMemberClick(team.id, member.userId)
-                                }
-                            />
-                        ))}
-                    </ul>
-                </div>
-
-                <div className={styles.teamCardBack}>
-                    <header
-                        className={styles.teamHeader}
-                        onDoubleClick={onHeaderDoubleClick}
-                    >
-                        <div className={styles.teamHeaderTop}>
-                            <div>
-                                <h2 className={styles.teamName}>
-                                    {teamNumber}팀
-                                </h2>
-                                <p className={styles.teamSummary}>
-                                    총 {team.members.length}명 ·{" "}
-                                    {gradeLabels[team.grade] || team.grade}
-                                </p>
-                            </div>
-                            <button
-                                type="button"
-                                className={styles.reasonButton}
-                                onClick={onHeaderDoubleClick}
-                            >
-                                팀원 보기
-                            </button>
-                        </div>
-                        <div className={styles.roleSummary}>
-                            <span>{getRoleSummary(team.members)}</span>
-                        </div>
-                    </header>
-
-                    <div className={styles.reasonArea}>
-                        <h3 className={styles.reasonTitle}>팀 배정 이유</h3>
-                        <div className={styles.reasonList}>
-                            {team.reasons?.length ? (
-                                team.reasons.map((reason) => (
-                                    <section
-                                        key={`${team.id}-${reason.title}`}
-                                        className={styles.reasonBox}
-                                    >
-                                        <strong>{reason.title}</strong>
-                                        <p>{reason.description}</p>
-                                    </section>
-                                ))
-                            ) : (
-                                <p className={styles.reasonEmpty}>
-                                    배정 이유를 생성하지 못했습니다. 팀을 재생성해주세요.
-                                </p>
-                            )}
-                        </div>
+                <div className={styles.reasonInner}>
+                    <div className={styles.reasonList}>
+                        {team.reasons?.length ? (
+                            team.reasons.map((reason) => (
+                                <div key={`${team.id}-${reason.title}`}>
+                                    <strong className={styles.reasonTitle}>
+                                        {reason.title}
+                                    </strong>
+                                    <p className={styles.reasonText}>
+                                        {reason.description}
+                                    </p>
+                                </div>
+                            ))
+                        ) : (
+                            <p className={styles.reasonText}>
+                                배정 이유를 생성하지 못했어요. 팀을 재생성해주세요.
+                            </p>
+                        )}
                     </div>
                 </div>
             </div>
-        </article>
+        </section>
     );
 };
 

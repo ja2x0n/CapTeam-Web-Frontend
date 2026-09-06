@@ -17,8 +17,10 @@ import {
     normalizeRecommendations,
     swapMembersInTeams,
 } from "../../../utils/teamRecommendation";
-import { roleLabels } from "../../../constants/team";
-import useDelayedLoading from "../../../hooks/useDelayedLoading";
+import { gradeLabels, roleLabels } from "../../../constants/team";
+import Skeleton from "../../../components/common/skeleton/Skeleton";
+import useInView from "../../../hooks/useInView";
+import ModalOverlay from "../../../components/common/modal/ModalOverlay";
 import { getAdminTeamCreationStatus } from "../../../utils/teamStatus";
 import { setStoredAdminTeamCreated } from "../../../utils/adminTeamStatusStorage";
 import {
@@ -56,7 +58,6 @@ const AdminTeamEdit = () => {
     const [message, setMessage] = useState("");
     const [error, setError] = useState("");
     const [isLoading, setIsLoading] = useState(true);
-    const showLoading = useDelayedLoading(isLoading);
     const highlightTimerRef = useRef(null);
     const [isRegenerateModalOpen, setIsRegenerateModalOpen] = useState(false);
     const [regenerationPrompt, setRegenerationPrompt] = useState("");
@@ -434,37 +435,45 @@ const AdminTeamEdit = () => {
         }
     };
 
+    const listRef = useInView({ replayKey: `${isLoading}-${teams.length}` });
+
     return (
         <div className={styles.page}>
             <Header />
 
-            <section className={styles.panel}>
-                <main className={styles.content}>
+            <main className={styles.body}>
+                <section className={styles.pageHead}>
                     <Link to="/admin/team-create" className={styles.backLink}>
-                        ← 처음으로
+                        ← 팀 생성
                     </Link>
-                    <div className={styles.titleArea}>
+
+                    <div className={styles.headRow}>
                         <div>
-                            <h1 className={styles.title}>
-                                팀 구성 검토 및 수정
+                            <p className={styles.eyebrow}>
+                                {gradeLabels[grade]} · AI 자동 배정
+                            </p>
+                            <h1 className={styles.headline}>
+                                팀 구성을 검토해주세요
                             </h1>
-                            <p className={styles.tipText}>
-                                팁: 학생을 클릭한 뒤 다른 학생을 클릭하면 두
-                                학생의 팀이 변경됩니다
+                            <p className={styles.subline}>
+                                학생을 클릭한 뒤 다른 팀의 학생을 클릭하면 두
+                                사람의 팀이 서로 바뀌어요.
+                                <br />
+                                팀장은 교환할 수 없어요.
                             </p>
                         </div>
 
-                        <div className={styles.actionArea}>
+                        <div className={styles.actions}>
                             {reviewPending && (
                                 <button
                                     type="button"
-                                    className={styles.changesButton}
+                                    className={styles.outlineButton}
                                     onClick={openChangesModal}
                                     disabled={isStreaming}
                                 >
                                     변경사항
                                     {diffData?.movedStudents?.length ? (
-                                        <span className={styles.changesCount}>
+                                        <span className={styles.countBadge}>
                                             {diffData.movedStudents.length}
                                         </span>
                                     ) : null}
@@ -472,7 +481,7 @@ const AdminTeamEdit = () => {
                             )}
                             <button
                                 type="button"
-                                className={styles.secondaryButton}
+                                className={styles.outlineButton}
                                 onClick={handleRegenerate}
                                 disabled={isStreaming || reviewPending}
                             >
@@ -488,33 +497,41 @@ const AdminTeamEdit = () => {
                             </button>
                         </div>
                     </div>
+                </section>
 
-                    {message && <p className={styles.messageText}>{message}</p>}
-                    {error && <p className={styles.messageText}>{error}</p>}
-
-                    <section className={styles.selectionBar}>
-                        <div>
-                            <strong>선택 상태</strong>
-                            <p>
-                                {selectedMemberName
-                                    ? `${selectedMemberName} 선택됨`
-                                    : "학생을 선택하면 이곳에 선택 상태가 표시됩니다."}
-                            </p>
-                        </div>
-                        <span>
-                            {selectedMemberName
-                                ? "교환할 학생을 한 명 더 선택하세요"
-                                : "팀 상단 더블클릭 또는 배정 이유 버튼으로 이유 확인"}
-                        </span>
-                    </section>
-
-                    {isLoading ? (
-                        <p className={styles.messageText}>
-                            {showLoading &&
-                                "팀 추천안을 불러오는 중입니다."}
+                <div className={styles.selectionBar}>
+                    <p className={styles.selectionText}>
+                        {selectedMemberName
+                            ? `${selectedMemberName} 선택됨 · 교환할 학생을 한 명 더 골라주세요.`
+                            : "학생을 클릭하면 교환할 상대를 고를 수 있어요."}
+                    </p>
+                    {isStreaming && (
+                        <p className={styles.streamNote}>
+                            남은 팀을 계속 불러오는 중이에요…
                         </p>
+                    )}
+                </div>
+
+                {message && <p className={styles.messageText}>{message}</p>}
+                {error && <p className={styles.errorText}>{error}</p>}
+
+                <div ref={listRef}>
+                    {isLoading ? (
+                        <div className={styles.teamSkeleton}>
+                            <Skeleton width={256} height={24} />
+                            <div className={styles.skeletonMembers}>
+                                {[0, 1, 2, 3, 4].map((index) => (
+                                    <Skeleton
+                                        key={index}
+                                        width={196}
+                                        height={86}
+                                        radius={12}
+                                    />
+                                ))}
+                            </div>
+                        </div>
                     ) : (
-                        <div className={styles.teamGrid}>
+                        <>
                             {teams.map((team, index) => (
                                 <TeamEditCard
                                     key={team.id}
@@ -529,13 +546,35 @@ const AdminTeamEdit = () => {
                                     }
                                 />
                             ))}
-                        </div>
+
+                            {/* 아직 도착하지 않은 팀 자리 */}
+                            {isStreaming && (
+                                <div className={styles.teamSkeleton}>
+                                    <Skeleton width={256} height={24} />
+                                    <div className={styles.skeletonMembers}>
+                                        {[0, 1, 2, 3, 4].map((index) => (
+                                            <Skeleton
+                                                key={index}
+                                                width={196}
+                                                height={86}
+                                                radius={12}
+                                            />
+                                        ))}
+                                    </div>
+                                </div>
+                            )}
+                        </>
                     )}
-                </main>
-            </section>
+                </div>
+            </main>
+
             {isRegenerateModalOpen && (
-                <div className={styles.modalOverlay}>
-                    <section className={styles.regenerateModal}>
+                <ModalOverlay
+                    onClose={() => setIsRegenerateModalOpen(false)}
+                    overlayClassName={styles.modalOverlay}
+                    modalClassName={styles.regenerateModal}
+                >
+                    <>
                         <div className={styles.modalHeader}>
                             <div>
                                 <h2 className={styles.modalTitle}>
@@ -587,12 +626,16 @@ const AdminTeamEdit = () => {
                                 재생성 시작
                             </button>
                         </div>
-                    </section>
-                </div>
+                    </>
+                </ModalOverlay>
             )}
             {isChangesModalOpen && (
-                <div className={styles.modalOverlay}>
-                    <section className={styles.changesModal}>
+                <ModalOverlay
+                    onClose={closeChangesModal}
+                    overlayClassName={styles.modalOverlay}
+                    modalClassName={styles.changesModal}
+                >
+                    <>
                         <div className={styles.modalHeader}>
                             <h2 className={styles.modalTitle}>
                                 재생성 전·후 비교
@@ -837,9 +880,8 @@ const AdminTeamEdit = () => {
                                 </div>
                             )}
                         </div>
-
-                    </section>
-                </div>
+                    </>
+                </ModalOverlay>
             )}
         </div>
     );

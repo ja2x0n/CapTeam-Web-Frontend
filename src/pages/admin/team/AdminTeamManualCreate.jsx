@@ -10,6 +10,10 @@ import {
     getRoleSummary,
 } from "../../../utils/teamRecommendation";
 import { getStudentNumberInfo } from "../../../utils/student";
+import Skeleton from "../../../components/common/skeleton/Skeleton";
+import EmptyState from "../../../components/common/empty/EmptyState";
+import ModalOverlay from "../../../components/common/modal/ModalOverlay";
+import useInView from "../../../hooks/useInView";
 import styles from "./AdminTeamManualCreate.module.css";
 
 const MAX_TEAM_SIZE = 5;
@@ -45,6 +49,9 @@ const AdminTeamManualCreate = () => {
     const [error, setError] = useState("");
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [isConfirmModalOpen, setIsConfirmModalOpen] = useState(false);
+    // 드래그로 옮기는 중인 학생 / 지금 올라가 있는 팀
+    const [draggingUserId, setDraggingUserId] = useState(null);
+    const [dragOverTeamId, setDragOverTeamId] = useState(null);
 
     useEffect(() => {
         const getStudents = async () => {
@@ -139,6 +146,23 @@ const AdminTeamManualCreate = () => {
         );
     };
 
+    const isTeamFull = (team) => team.memberUserIds.length >= MAX_TEAM_SIZE;
+
+    const handleDropOnTeam = (event, team) => {
+        event.preventDefault();
+        setDragOverTeamId(null);
+
+        const userId =
+            event.dataTransfer.getData("text/plain") || draggingUserId;
+
+        setDraggingUserId(null);
+
+        if (!userId || isTeamFull(team)) return;
+        if (assignedUserIds.has(userId)) return;
+
+        handleAddMember(team.id, userId);
+    };
+
     const handleSearchChange = (teamId, value) => {
         setSearchByTeamId((prev) => ({ ...prev, [teamId]: value }));
         setOpenResultsTeamId(value.trim() ? teamId : null);
@@ -183,437 +207,509 @@ const AdminTeamManualCreate = () => {
         submitTeams();
     };
 
+    const assignedCount = assignedUserIds.size;
+    const filledTeamCount = teams.filter(
+        (team) => team.memberUserIds.length > 0
+    ).length;
+    const canSubmit = filledTeamCount > 0 && !isSubmitting;
+    const boardRef = useInView({ replayKey: `${isLoading}-${teams.length}` });
+
     return (
         <div className={styles.page}>
             <Header />
 
             <main className={styles.body}>
-                <Link to="/admin/team-create" className={styles.backLink}>
-                    ← 처음으로
-                </Link>
-
-                <div className={styles.titleArea}>
-                    <div>
-                        <h1 className={styles.title}>
-                            {gradeLabels[grade]} 팀 직접 구성
-                        </h1>
-                        <p className={styles.tipText}>
-                            팁: 학생을 검색해서 팀에 추가하고, 팀장 한 명을
-                            지정하세요. 한 팀은 최대 {MAX_TEAM_SIZE}명까지
-                            배정할 수 있습니다.
-                        </p>
-                    </div>
-                    <button
-                        type="button"
-                        className={styles.submitButton}
-                        disabled={isSubmitting}
-                        onClick={handleSubmitClick}
-                    >
-                        {isSubmitting ? "저장 중..." : "직접 구성 완료"}
-                    </button>
+                <div className={styles.backRow}>
+                    <Link to="/admin/team-create" className={styles.backLink}>
+                        ← 팀 생성
+                    </Link>
                 </div>
 
-                {error && <p className={styles.errorText}>{error}</p>}
+                <section className={styles.pageHead}>
+                    <p className={styles.eyebrow}>
+                        {gradeLabels[grade]} · 직접 구성
+                    </p>
+                    <h1 className={styles.headline}>팀을 직접 짜주세요</h1>
+                    <p className={styles.subline}>
+                        학생을 검색해 팀에 추가하고 팀장을 지정하세요.
+                        <br />한 팀은 최대 <b>{MAX_TEAM_SIZE}명</b>까지예요.
+                        <br />
+                        먼저 넣은 학생이 자동으로 팀장이 되고, 언제든 바꿀 수
+                        있어요.
+                    </p>
+                </section>
 
-                {!isLoading && (
-                    <section className={styles.layout}>
-                        <aside className={styles.poolPanel}>
-                            <div className={styles.poolHeader}>
-                                <h2>미배정 학생</h2>
-                                <span className={styles.poolCount}>
-                                    {unassignedStudents.length}명
-                                </span>
-                            </div>
-                            <div className={styles.poolList}>
-                                {unassignedStudents.length ? (
-                                    unassignedStudents.map((student) => (
-                                        <div
-                                            key={student.userId}
-                                            className={styles.poolItem}
-                                        >
-                                            <div className={styles.poolName}>
-                                                {student.name}
-                                            </div>
-                                            <div className={styles.poolMeta}>
-                                                <span>
-                                                    {student.userId.replace(
-                                                        "stu",
-                                                        ""
-                                                    )}
+                {/* 스크롤해도 따라오는 배정 현황 + 액션 */}
+                <div className={styles.summaryBar}>
+                    <div className={styles.summaryRow}>
+                        <div className={styles.stat}>
+                            <p className={styles.statLabel}>배정 완료</p>
+                            <p className={styles.statValue}>
+                                {assignedCount}{" "}
+                                <span>/ {students.length}명</span>
+                            </p>
+                        </div>
+                        <div className={styles.stat}>
+                            <p className={styles.statLabel}>만든 팀</p>
+                            <p className={styles.statValue}>
+                                {teams.length}
+                                <span>팀</span>
+                            </p>
+                        </div>
+
+                        <div className={styles.summaryActions}>
+                            <button
+                                type="button"
+                                className={styles.outlineButton}
+                                onClick={handleAddTeam}
+                            >
+                                + 팀 추가
+                            </button>
+                            <button
+                                type="button"
+                                className={styles.primaryButton}
+                                disabled={!canSubmit}
+                                onClick={handleSubmitClick}
+                            >
+                                {isSubmitting ? "저장 중..." : "직접 구성 완료"}
+                            </button>
+                        </div>
+                    </div>
+
+                    {!canSubmit && !isSubmitting && (
+                        <p className={styles.submitHint}>
+                            최소 한 팀 이상 학생을 배정해야 완료할 수 있어요.
+                        </p>
+                    )}
+                    {error && <p className={styles.errorText}>{error}</p>}
+                </div>
+
+                {isLoading ? (
+                    <div className={styles.board}>
+                        <div>
+                            <Skeleton width={128} height={24} />
+                            <Skeleton height={56} style={{ marginTop: 16 }} />
+                            <Skeleton height={56} style={{ marginTop: 8 }} />
+                            <Skeleton height={56} style={{ marginTop: 8 }} />
+                        </div>
+                        <div>
+                            <Skeleton height={160} />
+                            <Skeleton height={160} style={{ marginTop: 20 }} />
+                        </div>
+                    </div>
+                ) : (
+                    <div className={styles.board} ref={boardRef}>
+                        <aside className={styles.poolColumn}>
+                            <div className={styles.poolSticky}>
+                                <div className={styles.poolHeader}>
+                                    <h2 className={styles.poolTitle}>
+                                        미배정 학생
+                                    </h2>
+                                    <span className={styles.poolCount}>
+                                        {unassignedStudents.length}명
+                                    </span>
+                                </div>
+
+                                <p className={styles.poolHint}>
+                                    학생을 팀으로 끌어다 놓으면 바로 배정돼요.
+                                </p>
+
+                                <div className={styles.poolList}>
+                                    {unassignedStudents.length ? (
+                                        unassignedStudents.map((student) => (
+                                            <div
+                                                key={student.userId}
+                                                className={`${styles.poolItem} ${
+                                                    draggingUserId ===
+                                                    student.userId
+                                                        ? styles.poolItemDragging
+                                                        : ""
+                                                }`}
+                                                draggable
+                                                onDragStart={(event) => {
+                                                    event.dataTransfer.setData(
+                                                        "text/plain",
+                                                        student.userId
+                                                    );
+                                                    event.dataTransfer.effectAllowed =
+                                                        "move";
+                                                    setDraggingUserId(
+                                                        student.userId
+                                                    );
+                                                }}
+                                                onDragEnd={() => {
+                                                    setDraggingUserId(null);
+                                                    setDragOverTeamId(null);
+                                                }}
+                                            >
+                                                <span
+                                                    className={styles.poolName}
+                                                >
+                                                    {student.name}
                                                 </span>
                                                 <span
-                                                    className={
-                                                        styles.poolRoleTag
-                                                    }
+                                                    className={styles.poolMeta}
                                                 >
+                                                    {
+                                                        getStudentNumberInfo(
+                                                            student.userId
+                                                        ).number
+                                                    }{" "}
+                                                    ·{" "}
                                                     {roleLabels[
                                                         student.studentRole
                                                     ] || student.studentRole}
                                                 </span>
                                             </div>
-                                        </div>
-                                    ))
-                                ) : (
-                                    <p className={styles.poolEmpty}>
-                                        모든 학생이 배정되었습니다.
-                                    </p>
-                                )}
+                                        ))
+                                    ) : (
+                                        <p className={styles.poolEmpty}>
+                                            모든 학생이 배정됐어요.
+                                        </p>
+                                    )}
+                                </div>
                             </div>
                         </aside>
 
-                        <section>
-                            <div className={styles.teamToolbar}>
-                                <h2>팀 목록</h2>
-                                <button
-                                    type="button"
-                                    className={styles.addTeamButton}
-                                    onClick={handleAddTeam}
-                                >
-                                    + 팀 추가
-                                </button>
-                            </div>
+                        <section className={styles.teamColumn}>
+                            {teams.length === 0 ? (
+                                <EmptyState
+                                    title="아직 만든 팀이 없어요"
+                                    description="위의 «+ 팀 추가»로 시작하세요."
+                                />
+                            ) : (
+                                teams.map((team, index) => {
+                                    const members = team.memberUserIds.map(
+                                        (userId) => findStudent(userId)
+                                    );
+                                    const isFull =
+                                        team.memberUserIds.length >=
+                                        MAX_TEAM_SIZE;
+                                    const searchResults = getSearchResults(
+                                        team.id
+                                    );
 
-                            {teams.length ? (
-                                <div className={styles.teamGrid}>
-                                    {teams.map((team, index) => {
-                                        const members =
-                                            team.memberUserIds.map(
-                                                (userId) =>
-                                                    findStudent(userId)
-                                            );
-                                        const isFull =
-                                            team.memberUserIds.length >=
-                                            MAX_TEAM_SIZE;
-                                        const searchResults =
-                                            getSearchResults(team.id);
+                                    return (
+                                        <div
+                                            key={team.id}
+                                            data-reveal
+                                            className={`${styles.team} ${
+                                                dragOverTeamId === team.id
+                                                    ? isFull
+                                                        ? styles.teamDropBlocked
+                                                        : styles.teamDropActive
+                                                    : ""
+                                            }`}
+                                            onDragOver={(event) => {
+                                                event.preventDefault();
+                                                event.dataTransfer.dropEffect =
+                                                    isFull ? "none" : "move";
+                                                setDragOverTeamId(team.id);
+                                            }}
+                                            onDragLeave={(event) => {
+                                                if (
+                                                    event.currentTarget.contains(
+                                                        event.relatedTarget
+                                                    )
+                                                ) {
+                                                    return;
+                                                }
 
-                                        return (
-                                            <article
-                                                key={team.id}
-                                                className={styles.teamCard}
-                                            >
-                                                <div
-                                                    className={
-                                                        styles.teamCardHead
-                                                    }
-                                                >
-                                                    <h3
-                                                        className={
-                                                            styles.teamName
-                                                        }
-                                                    >
-                                                        {index + 1}팀
-                                                    </h3>
+                                                setDragOverTeamId((current) =>
+                                                    current === team.id
+                                                        ? null
+                                                        : current
+                                                );
+                                            }}
+                                            onDrop={(event) =>
+                                                handleDropOnTeam(event, team)
+                                            }
+                                        >
+                                            <div className={styles.teamHead}>
+                                                <h3 className={styles.teamName}>
+                                                    {index + 1}팀
                                                     <span
-                                                        className={`${styles.teamCapacity} ${
+                                                        className={
                                                             isFull
-                                                                ? styles.isFull
-                                                                : ""
-                                                        }`}
+                                                                ? styles.capacityFull
+                                                                : styles.capacity
+                                                        }
                                                     >
                                                         {
                                                             team.memberUserIds
                                                                 .length
                                                         }
                                                         /{MAX_TEAM_SIZE}명
+                                                        {members.length > 0 &&
+                                                            ` · ${getRoleSummary(members)}`}
                                                     </span>
-                                                    <button
-                                                        type="button"
-                                                        className={
-                                                            styles.removeTeamButton
-                                                        }
-                                                        onClick={() =>
-                                                            handleRemoveTeam(
-                                                                team.id
-                                                            )
-                                                        }
-                                                    >
-                                                        팀 삭제
-                                                    </button>
-                                                </div>
-
-                                                {members.length > 0 && (
-                                                    <>
-                                                        <div
-                                                            className={
-                                                                styles.roleBar
-                                                            }
-                                                        >
-                                                            {getRoleBarSegments(
-                                                                members
-                                                            ).map(
-                                                                (segment) => (
-                                                                    <span
-                                                                        key={
-                                                                            segment.role
-                                                                        }
-                                                                        style={{
-                                                                            width: `${segment.percent}%`,
-                                                                        }}
-                                                                    />
-                                                                )
-                                                            )}
-                                                        </div>
-                                                        <div
-                                                            className={
-                                                                styles.roleLegend
-                                                            }
-                                                        >
-                                                            {getRoleSummary(
-                                                                members
-                                                            )}
-                                                        </div>
-                                                    </>
-                                                )}
-
-                                                {isFull ? (
-                                                    <p
-                                                        className={
-                                                            styles.teamFullNote
-                                                        }
-                                                    >
-                                                        정원 {MAX_TEAM_SIZE}
-                                                        명이 모두 찼습니다.
-                                                    </p>
-                                                ) : (
-                                                    <div
-                                                        className={
-                                                            styles.teamSearchWrap
-                                                        }
-                                                    >
-                                                        <span
-                                                            className={
-                                                                styles.icon
-                                                            }
-                                                        >
-                                                            ⌕
-                                                        </span>
-                                                        <input
-                                                            type="text"
-                                                            placeholder="이름, 학번, 역할로 검색해서 추가"
-                                                            autoComplete="off"
-                                                            value={
-                                                                searchByTeamId[
-                                                                    team.id
-                                                                ] || ""
-                                                            }
-                                                            onChange={(e) =>
-                                                                handleSearchChange(
-                                                                    team.id,
-                                                                    e.target
-                                                                        .value
-                                                                )
-                                                            }
-                                                        />
-                                                        {openResultsTeamId ===
-                                                            team.id && (
-                                                            <div
-                                                                className={
-                                                                    styles.teamSearchResults
-                                                                }
-                                                            >
-                                                                {searchResults.length ? (
-                                                                    searchResults.map(
-                                                                        (
-                                                                            student
-                                                                        ) => (
-                                                                            <button
-                                                                                key={
-                                                                                    student.userId
-                                                                                }
-                                                                                type="button"
-                                                                                className={
-                                                                                    styles.teamSearchResult
-                                                                                }
-                                                                                onClick={() =>
-                                                                                    handleAddMember(
-                                                                                        team.id,
-                                                                                        student.userId
-                                                                                    )
-                                                                                }
-                                                                            >
-                                                                                <span>
-                                                                                    {
-                                                                                        student.name
-                                                                                    }
-                                                                                </span>
-                                                                                <span>
-                                                                                    {roleLabels[
-                                                                                        student
-                                                                                            .studentRole
-                                                                                    ] ||
-                                                                                        student.studentRole}
-                                                                                </span>
-                                                                            </button>
-                                                                        )
-                                                                    )
-                                                                ) : (
-                                                                    <div
-                                                                        className={
-                                                                            styles.teamSearchEmpty
-                                                                        }
-                                                                    >
-                                                                        일치하는
-                                                                        학생이
-                                                                        없습니다.
-                                                                    </div>
-                                                                )}
-                                                            </div>
-                                                        )}
-                                                    </div>
-                                                )}
-
-                                                <ul
+                                                </h3>
+                                                <button
+                                                    type="button"
                                                     className={
-                                                        styles.memberList
+                                                        styles.removeTeamButton
+                                                    }
+                                                    onClick={() =>
+                                                        handleRemoveTeam(
+                                                            team.id
+                                                        )
                                                     }
                                                 >
-                                                    {members.length ? (
-                                                        members.map(
-                                                            (member) => (
-                                                                <li
-                                                                    key={
-                                                                        member.userId
-                                                                    }
-                                                                    className={
-                                                                        styles.memberRow
-                                                                    }
-                                                                >
-                                                                    <div
-                                                                        className={
-                                                                            styles.memberMain
-                                                                        }
-                                                                    >
-                                                                        <span
-                                                                            className={
-                                                                                styles.memberName
-                                                                            }
-                                                                        >
-                                                                            {
-                                                                                member.name
-                                                                            }
-                                                                        </span>
-                                                                        {team.leaderUserId ===
-                                                                            member.userId && (
-                                                                            <span
-                                                                                className={
-                                                                                    styles.leaderBadge
-                                                                                }
-                                                                            >
-                                                                                팀장
-                                                                            </span>
-                                                                        )}
-                                                                        <span
-                                                                            className={
-                                                                                styles.memberRole
-                                                                            }
-                                                                        >
-                                                                            {roleLabels[
-                                                                                member
-                                                                                    .studentRole
-                                                                            ] ||
-                                                                                member.studentRole}
-                                                                        </span>
-                                                                    </div>
-                                                                    <div
-                                                                        className={
-                                                                            styles.memberActions
-                                                                        }
-                                                                    >
-                                                                        {team.leaderUserId !==
-                                                                            member.userId && (
-                                                                            <button
-                                                                                type="button"
-                                                                                className={
-                                                                                    styles.setLeaderButton
-                                                                                }
-                                                                                onClick={() =>
-                                                                                    handleSetLeader(
-                                                                                        team.id,
-                                                                                        member.userId
-                                                                                    )
-                                                                                }
-                                                                            >
-                                                                                팀장
-                                                                                지정
-                                                                            </button>
-                                                                        )}
+                                                    팀 삭제
+                                                </button>
+                                            </div>
+
+                                            {members.length > 0 && (
+                                                <div className={styles.roleBar}>
+                                                    {getRoleBarSegments(
+                                                        members
+                                                    ).map((segment) => (
+                                                        <span
+                                                            key={segment.role}
+                                                            style={{
+                                                                width: `${segment.percent}%`,
+                                                            }}
+                                                        />
+                                                    ))}
+                                                </div>
+                                            )}
+
+                                            {isFull ? (
+                                                <p className={styles.fullNote}>
+                                                    정원 {MAX_TEAM_SIZE}명이
+                                                    모두 찼어요.
+                                                </p>
+                                            ) : (
+                                                <div
+                                                    className={
+                                                        styles.searchWrap
+                                                    }
+                                                >
+                                                    <input
+                                                        type="text"
+                                                        className={
+                                                            styles.search
+                                                        }
+                                                        placeholder="이름, 학번, 역할로 검색해서 추가"
+                                                        autoComplete="off"
+                                                        value={
+                                                            searchByTeamId[
+                                                                team.id
+                                                            ] || ""
+                                                        }
+                                                        onChange={(event) =>
+                                                            handleSearchChange(
+                                                                team.id,
+                                                                event.target
+                                                                    .value
+                                                            )
+                                                        }
+                                                    />
+                                                    {openResultsTeamId ===
+                                                        team.id && (
+                                                        <div
+                                                            className={
+                                                                styles.searchResults
+                                                            }
+                                                        >
+                                                            {searchResults.length ? (
+                                                                searchResults.map(
+                                                                    (
+                                                                        student
+                                                                    ) => (
                                                                         <button
+                                                                            key={
+                                                                                student.userId
+                                                                            }
                                                                             type="button"
                                                                             className={
-                                                                                styles.removeMemberButton
+                                                                                styles.searchResult
                                                                             }
                                                                             onClick={() =>
-                                                                                handleRemoveMember(
+                                                                                handleAddMember(
                                                                                     team.id,
-                                                                                    member.userId
+                                                                                    student.userId
                                                                                 )
                                                                             }
                                                                         >
-                                                                            삭제
+                                                                            <span>
+                                                                                {
+                                                                                    student.name
+                                                                                }
+                                                                            </span>
+                                                                            <span
+                                                                                className={
+                                                                                    styles.searchResultRole
+                                                                                }
+                                                                            >
+                                                                                {roleLabels[
+                                                                                    student
+                                                                                        .studentRole
+                                                                                ] ||
+                                                                                    student.studentRole}
+                                                                            </span>
                                                                         </button>
-                                                                    </div>
-                                                                </li>
-                                                            )
-                                                        )
-                                                    ) : (
-                                                        <li
+                                                                    )
+                                                                )
+                                                            ) : (
+                                                                <p
+                                                                    className={
+                                                                        styles.searchEmpty
+                                                                    }
+                                                                >
+                                                                    일치하는
+                                                                    학생이
+                                                                    없어요.
+                                                                </p>
+                                                            )}
+                                                        </div>
+                                                    )}
+                                                </div>
+                                            )}
+
+                                            <div className={styles.memberList}>
+                                                {members.length ? (
+                                                    members.map((member) => (
+                                                        <div
+                                                            key={member.userId}
                                                             className={
-                                                                styles.memberEmpty
+                                                                styles.memberRow
                                                             }
                                                         >
-                                                            아직 배정된
-                                                            학생이 없습니다.
-                                                        </li>
-                                                    )}
-                                                </ul>
-                                            </article>
-                                        );
-                                    })}
-                                </div>
-                            ) : (
-                                <p className={styles.emptyTeamGrid}>
-                                    아직 만든 팀이 없습니다. "+ 팀 추가"로
-                                    시작하세요.
-                                </p>
+                                                            <span
+                                                                className={
+                                                                    styles.memberMain
+                                                                }
+                                                            >
+                                                                <span
+                                                                    className={
+                                                                        styles.memberName
+                                                                    }
+                                                                >
+                                                                    {
+                                                                        member.name
+                                                                    }
+                                                                </span>
+                                                                {team.leaderUserId ===
+                                                                    member.userId && (
+                                                                    <span
+                                                                        className={
+                                                                            styles.leaderBadge
+                                                                        }
+                                                                    >
+                                                                        팀장
+                                                                    </span>
+                                                                )}
+                                                                <span
+                                                                    className={
+                                                                        styles.memberRole
+                                                                    }
+                                                                >
+                                                                    {roleLabels[
+                                                                        member
+                                                                            .studentRole
+                                                                    ] ||
+                                                                        member.studentRole}
+                                                                </span>
+                                                            </span>
+
+                                                            <span
+                                                                className={
+                                                                    styles.memberActions
+                                                                }
+                                                            >
+                                                                {team.leaderUserId !==
+                                                                    member.userId && (
+                                                                    <button
+                                                                        type="button"
+                                                                        className={
+                                                                            styles.textButton
+                                                                        }
+                                                                        onClick={() =>
+                                                                            handleSetLeader(
+                                                                                team.id,
+                                                                                member.userId
+                                                                            )
+                                                                        }
+                                                                    >
+                                                                        팀장
+                                                                        지정
+                                                                    </button>
+                                                                )}
+                                                                <button
+                                                                    type="button"
+                                                                    className={
+                                                                        styles.dangerTextButton
+                                                                    }
+                                                                    onClick={() =>
+                                                                        handleRemoveMember(
+                                                                            team.id,
+                                                                            member.userId
+                                                                        )
+                                                                    }
+                                                                >
+                                                                    삭제
+                                                                </button>
+                                                            </span>
+                                                        </div>
+                                                    ))
+                                                ) : (
+                                                    <p
+                                                        className={
+                                                            styles.memberEmpty
+                                                        }
+                                                    >
+                                                        아직 배정된 학생이
+                                                        없어요.
+                                                    </p>
+                                                )}
+                                            </div>
+                                        </div>
+                                    );
+                                })
                             )}
                         </section>
-                    </section>
+                    </div>
                 )}
             </main>
 
             {isConfirmModalOpen && (
-                <div className={styles.modalOverlay}>
-                    <section className={styles.confirmModal}>
-                        <h2 className={styles.confirmModalTitle}>
-                            배정되지 않은 학생이 있습니다
+                <ModalOverlay
+                    onClose={() => setIsConfirmModalOpen(false)}
+                    overlayClassName={styles.modalOverlay}
+                    modalClassName={styles.confirmModal}
+                >
+                    <>
+                        <h2 className={styles.confirmTitle}>
+                            배정되지 않은 학생이 있어요
                         </h2>
-                        <p className={styles.confirmModalText}>
+                        <p className={styles.confirmText}>
                             아직 배정되지 않은 학생이{" "}
-                            {unassignedStudents.length}명 있습니다. 이대로
-                            진행하시겠습니까?
+                            {unassignedStudents.length}명 있어요.
+                            <br />
+                            이대로 진행할까요?
                         </p>
-                        <div className={styles.confirmModalActions}>
+                        <div className={styles.confirmActions}>
                             <button
                                 type="button"
-                                className={styles.confirmCancelButton}
+                                className={styles.textButton}
                                 onClick={() => setIsConfirmModalOpen(false)}
                             >
                                 취소
                             </button>
                             <button
                                 type="button"
-                                className={styles.confirmProceedButton}
+                                className={styles.primaryButton}
                                 onClick={() => {
                                     setIsConfirmModalOpen(false);
                                     submitTeams();
                                 }}
                             >
-                                진행하시겠습니까?
+                                이대로 진행하기
                             </button>
                         </div>
-                    </section>
-                </div>
+                    </>
+                </ModalOverlay>
             )}
         </div>
     );
