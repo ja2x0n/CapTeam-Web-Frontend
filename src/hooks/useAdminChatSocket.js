@@ -17,6 +17,7 @@ const useAdminChatSocket = ({
     onMessageEvent,
     onChannelEvent,
     onUnreadEvent,
+    onBeforeSend,
 }) => {
     const [isSocketConnected, setIsSocketConnected] = useState(false);
     const [isSending, setIsSending] = useState(false);
@@ -190,6 +191,8 @@ const useAdminChatSocket = ({
             setIsSending(true);
             setSocketError("");
 
+            // 내가 보낸 메시지는 스크롤이 따라 내려가야 한다.
+            onBeforeSend?.();
             sendChatSocketMessage(client, selectedChannelId, {
                 message,
             });
@@ -222,6 +225,7 @@ const useAdminChatSocket = ({
                 file
             );
 
+            onBeforeSend?.();
             sendChatSocketMessage(client, selectedChannelId, {
                 message,
                 fileUrl: uploadedFile.fileUrl,

@@ -21,6 +21,7 @@ const useChatSocket = ({
     updateChannelLastMessage,
     onUnreadEvent,
     onForeignMessage,
+    onBeforeSend,
     setError,
 }) => {
     const chatClientRef = useRef(null);
@@ -262,6 +263,8 @@ const useChatSocket = ({
 
         try {
             setIsSending(true);
+            // 내가 보낸 메시지는 스크롤이 따라 내려가야 한다.
+            onBeforeSend?.();
             sendChatSocketMessage(client, selectedChannel.id, message);
             return true;
         } catch {
@@ -291,6 +294,7 @@ const useChatSocket = ({
                 file
             );
 
+            onBeforeSend?.();
             sendChatSocketMessage(client, selectedChannel.id, {
                 message,
                 fileUrl: uploadedFile.fileUrl,

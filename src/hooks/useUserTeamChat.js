@@ -42,7 +42,7 @@ const useUserTeamChat = () => {
         isMessageLoading,
         isLoadingMoreMessages,
         messageListRef,
-        scrollToBottom,
+        pinToBottom,
         handleEditMessage,
         handleDeleteMessage,
         handleMessageEvent,
@@ -72,6 +72,7 @@ const useUserTeamChat = () => {
         clearChannelUnreadCount,
         updateChannelLastMessage,
         onUnreadEvent: applyChannelUnreadEvent,
+        onBeforeSend: pinToBottom,
         onForeignMessage: (channel, receivedMessage) => {
             setToasts((prevToasts) => [
                 ...prevToasts,
@@ -152,18 +153,6 @@ const useUserTeamChat = () => {
     const members = withMemberDetails(presenceMembers);
     const onlineMembers = withMemberDetails(presenceOnlineMembers);
     const offlineMembers = withMemberDetails(presenceOfflineMembers);
-
-    useEffect(() => {
-        return scrollToBottom({
-            isPageLoading: isLoading,
-        });
-    }, [
-        isLoading,
-        isMessageLoading,
-        messages,
-        selectedChannel?.id,
-        scrollToBottom,
-    ]);
 
     return {
         room,

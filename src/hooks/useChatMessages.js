@@ -11,16 +11,25 @@ const getPageContent = (data) => {
     return [];
 };
 
+// 목록 맨 아래에서 이 px 이내면 "사용자가 아래를 보고 있다"로 친다.
+const BOTTOM_THRESHOLD_PX = 120;
+
+const isNearBottom = (element) =>
+    element.scrollHeight - element.scrollTop - element.clientHeight <
+    BOTTOM_THRESHOLD_PX;
+
 const useChatMessages = ({
     selectedChannel,
     fetchMessages,
     markAsRead,
     onReadComplete,
     onError,
-    autoScrollOnLoad = false,
 }) => {
     const isLoadingOlderMessagesRef = useRef(false);
     const messageListRef = useRef(null);
+    // 사용자가 지금 목록 맨 아래를 보고 있는지. 위로 올려 예전 대화를 읽는 중이면
+    // 새 메시지가 와도 스크롤을 강제로 내리지 않는다.
+    const isPinnedToBottomRef = useRef(true);
 
     const [messages, setMessages] = useState([]);
     const [isMessageLoading, setIsMessageLoading] = useState(false);
@@ -39,12 +48,15 @@ const useChatMessages = ({
         [onError]
     );
 
+    // force=true면 사용자의 스크롤 위치와 상관없이 무조건 아래로 내린다.
+    // (내가 방금 메시지를 보냈을 때, 채널을 새로 열었을 때)
     const scrollToBottom = useCallback(
-        ({ isPageLoading } = {}) => {
+        ({ isPageLoading, force = false } = {}) => {
             if (isLoadingOlderMessagesRef.current) return;
             if (isPageLoading || isMessageLoading || messages.length === 0) {
                 return;
             }
+            if (!force && !isPinnedToBottomRef.current) return;
 
             const messageList = messageListRef.current;
 
@@ -52,6 +64,7 @@ const useChatMessages = ({
 
             const frameId = requestAnimationFrame(() => {
                 messageList.scrollTop = messageList.scrollHeight;
+                isPinnedToBottomRef.current = true;
             });
 
             return () => {
@@ -61,10 +74,18 @@ const useChatMessages = ({
         [isMessageLoading, messages.length]
     );
 
+    // 내가 메시지를 보내는 순간 호출한다. 서버가 되돌려준 메시지가 목록에 붙을 때
+    // 스크롤이 따라 내려가도록 아래 고정 상태로 되돌린다.
+    const pinToBottom = useCallback(() => {
+        isPinnedToBottomRef.current = true;
+    }, []);
+
     useEffect(() => {
         if (!selectedChannelId) return undefined;
 
         let ignore = false;
+        // 새 채널을 열면 항상 맨 아래(최신 메시지)에서 시작한다.
+        isPinnedToBottomRef.current = true;
 
         const getMessages = async () => {
             try {
@@ -102,12 +123,15 @@ const useChatMessages = ({
         setErrorMessage,
     ]);
 
+    // 메시지가 소켓으로 추가된 뒤 실제 DOM에 그려진 다음 스크롤한다.
+    // setMessages 직후에는 아직 새 메시지 높이가 scrollHeight에 반영되지
+    // 않을 수 있어서, addMessage 안에서 바로 스크롤하면 놓칠 수 있다.
     useLayoutEffect(() => {
-        if (!autoScrollOnLoad) return;
         if (isMessageLoading || messages.length === 0) return;
+        if (isLoadingOlderMessagesRef.current) return;
 
-        scrollToBottom();
-    }, [autoScrollOnLoad, isMessageLoading, messages, scrollToBottom]);
+        return scrollToBottom();
+    }, [isMessageLoading, messages, scrollToBottom]);
 
     const addMessage = useCallback(
         (message) => {
@@ -124,10 +148,8 @@ const useChatMessages = ({
                         parseChatDate(a.createdAt) - parseChatDate(b.createdAt)
                 );
             });
-
-            if (autoScrollOnLoad) scrollToBottom();
         },
-        [autoScrollOnLoad, scrollToBottom]
+        []
     );
 
     const clearMessages = useCallback(() => {
@@ -246,6 +268,11 @@ const useChatMessages = ({
     const handleMessageScroll = async (event) => {
         const messageList = event.currentTarget;
 
+        // 이전 메시지를 끌어오는 중(스크롤 위치를 코드가 조정하는 중)에는 판정하지 않는다.
+        if (!isLoadingOlderMessagesRef.current) {
+            isPinnedToBottomRef.current = isNearBottom(messageList);
+        }
+
         if (
             messageList.scrollTop > 40 ||
             isLoadingMoreMessages ||
@@ -304,6 +331,7 @@ const useChatMessages = ({
         messageError,
         messageListRef,
         scrollToBottom,
+        pinToBottom,
         handleEditMessage,
         handleDeleteMessage,
         handleMessageEvent,
