@@ -1,12 +1,15 @@
-// Design/UserDashboard.html 반영.
-// (사용자 요청으로 "내 팀" 위젯은 제거 — 팀 생성 여부와 무관하게 프로젝트 기획서/팀 채팅 2개만 노출)
+// Design/user-home.html 반영.
+// 표시하는 값은 전부 실제 API가 내려주는 데이터로 한정한다 — 화면을 채우려고 없는 값을 만들지 않는다.
 import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import Header from "../../../components/common/header/Header";
 import TeamRequiredModal from "../../../components/common/modal/TeamRequiredModal";
+import Skeleton from "../../../components/common/skeleton/Skeleton";
+import EmptyState from "../../../components/common/empty/EmptyState";
+import useInView from "../../../hooks/useInView";
+import authStore from "../../../store/authStore";
 import { requestUserDashboard } from "../../../api/dashboardApi";
 import { requestUserProjectPlan } from "../../../api/projectApi";
-import { requestMyChannelSummaries } from "../../../api/chatApi";
 import { requestNoticeList } from "../../../api/noticeApi";
 import { normalizeProjectPlan } from "../../../utils/projectPlan";
 import {
@@ -15,11 +18,8 @@ import {
     getCapstoneLogUnavailableText,
     isCapstoneLogTime,
 } from "../../../utils/capstoneLogTime";
-import { formatChatTime } from "../../../utils/chat";
 import { formatCreatedAt, stripMarkdown, truncateText } from "../../../utils/format";
 import useUnreadChatCount from "../../../hooks/useUnreadChatCount";
-import heroVisualPending from "../../../assets/images/dashboardHeroPuzzle.png";
-import heroVisualDone from "../../../assets/images/dashboardHeroPuzzleUser.png";
 import styles from "./UserDashboard.module.css";
 
 const PROJECT_PLAN_FIELDS = [
@@ -29,9 +29,6 @@ const PROJECT_PLAN_FIELDS = [
 ];
 
 const buildProjectPlanStatus = (projectPlan) => {
-    const filledFields = PROJECT_PLAN_FIELDS.filter((field) =>
-        projectPlan[field.key].trim()
-    );
     const hasCoreFeature = projectPlan.coreFeatures.some((feature) =>
         feature.value.trim()
     );
@@ -41,14 +38,60 @@ const buildProjectPlanStatus = (projectPlan) => {
     ).map((field) => field.label);
     if (!hasCoreFeature) incompleteItemLabels.push("핵심 기능");
 
-    return {
-        completedCount: filledFields.length + (hasCoreFeature ? 1 : 0),
-        totalCount: PROJECT_PLAN_FIELDS.length + 1,
-        incompleteItemLabels,
-    };
+    return { incompleteItemLabels };
 };
 
+const ChevronIcon = () => (
+    <svg
+        className={styles.chevron}
+        width="18"
+        height="18"
+        viewBox="0 0 24 24"
+        fill="none"
+        stroke="currentColor"
+        strokeWidth="1.8"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+        aria-hidden="true"
+    >
+        <path d="m9 18 6-6-6-6" />
+    </svg>
+);
+
+const HomeSkeleton = () => (
+    <>
+        <div className={styles.hero}>
+            <div className={styles.heroMain}>
+                <Skeleton width={96} height={20} />
+                <Skeleton width="min(520px, 100%)" height={44} style={{ marginTop: 20 }} />
+                <Skeleton width="60%" height={44} style={{ marginTop: 12 }} />
+                <Skeleton width="min(420px, 66%)" height={24} style={{ marginTop: 28 }} />
+                <Skeleton width={160} height={48} style={{ marginTop: 36 }} />
+            </div>
+            <div className={styles.statusPanel}>
+                <Skeleton width={96} height={20} />
+                <Skeleton width={192} height={48} style={{ marginTop: 8 }} />
+            </div>
+        </div>
+
+        <div className={styles.columns}>
+            <div>
+                <Skeleton width={96} height={24} />
+                <Skeleton height={48} style={{ marginTop: 20 }} />
+                <Skeleton height={48} style={{ marginTop: 12 }} />
+            </div>
+            <div>
+                <Skeleton width={64} height={24} />
+                <Skeleton height={56} style={{ marginTop: 20 }} />
+                <Skeleton height={56} style={{ marginTop: 12 }} />
+                <Skeleton height={56} style={{ marginTop: 12 }} />
+            </div>
+        </div>
+    </>
+);
+
 const UserDashboard = () => {
+    const user = authStore((state) => state.user);
     const [dashboard, setDashboard] = useState({
         teamCreated: false,
         todayJournalSubmitted: false,
@@ -58,12 +101,14 @@ const UserDashboard = () => {
     const [error, setError] = useState("");
     const [teamRequiredModal, setTeamRequiredModal] = useState(null);
     const [projectPlanStatus, setProjectPlanStatus] = useState(null);
-    const [recentMessages, setRecentMessages] = useState([]);
     const [notices, setNotices] = useState([]);
     const [sectionErrors, setSectionErrors] = useState({});
-    const { unreadChatCount, lastUnreadEvent } = useUnreadChatCount({
+    const { unreadChatCount } = useUnreadChatCount({
         enabled: dashboard.teamCreated,
     });
+
+    // 로딩이 끝나 실제 화면이 붙는 순간부터 "스르륵" 재생
+    const revealRef = useInView({ replayKey: isDashboardLoading });
 
     useEffect(() => {
         const getDashboardData = async () => {
@@ -86,100 +131,27 @@ const UserDashboard = () => {
     useEffect(() => {
         if (!dashboard.teamCreated) return;
 
-        const getSectionData = async () => {
-            const [planResult, chatResult] = await Promise.allSettled([
-                requestUserProjectPlan(),
-                requestMyChannelSummaries(),
-            ]);
-
-            const nextSectionErrors = {};
-
-            if (planResult.status === "fulfilled") {
-                setProjectPlanStatus(
-                    buildProjectPlanStatus(
-                        normalizeProjectPlan(planResult.value)
-                    )
-                );
-            } else {
-                nextSectionErrors.plan = "프로젝트 기획서를 불러오지 못했습니다.";
-            }
-
-            if (chatResult.status === "fulfilled") {
-                const summaries = Array.isArray(chatResult.value)
-                    ? chatResult.value
-                    : [];
-                setRecentMessages(
-                    summaries
-                        .filter((summary) => summary.lastMessage)
-                        .map((summary) => ({
-                            senderName: summary.lastMessage.senderName,
-                            timeText: formatChatTime(
-                                summary.lastMessage.createdAt
-                            ),
-                            preview:
-                                summary.lastMessage.message ??
-                                "파일을 보냈습니다.",
-                            createdAt: summary.lastMessage.createdAt,
-                        }))
-                        .sort(
-                            (a, b) =>
-                                new Date(b.createdAt) - new Date(a.createdAt)
-                        )
-                        .slice(0, 2)
-                );
-            } else {
-                nextSectionErrors.chat = "채팅 미리보기를 불러오지 못했습니다.";
-            }
-
-            setSectionErrors((prev) => ({ ...prev, ...nextSectionErrors }));
-        };
-
-        getSectionData();
-    }, [dashboard.teamCreated]);
-
-    useEffect(() => {
-        if (!dashboard.teamCreated || !lastUnreadEvent) return;
-
         let ignore = false;
 
-        requestMyChannelSummaries()
-            .then((summaries) => {
+        requestUserProjectPlan()
+            .then((plan) => {
                 if (ignore) return;
-
-                setRecentMessages(
-                    (Array.isArray(summaries) ? summaries : [])
-                        .filter((summary) => summary.lastMessage)
-                        .map((summary) => ({
-                            senderName: summary.lastMessage.senderName,
-                            timeText: formatChatTime(
-                                summary.lastMessage.createdAt
-                            ),
-                            preview:
-                                summary.lastMessage.message ??
-                                "파일을 보냈습니다.",
-                            createdAt: summary.lastMessage.createdAt,
-                        }))
-                        .sort(
-                            (a, b) =>
-                                new Date(b.createdAt) - new Date(a.createdAt)
-                        )
-                        .slice(0, 2)
+                setProjectPlanStatus(
+                    buildProjectPlanStatus(normalizeProjectPlan(plan))
                 );
-                setSectionErrors((prev) => ({ ...prev, chat: undefined }));
             })
             .catch(() => {
-                if (!ignore) {
-                    setSectionErrors((prev) => ({
-                        ...prev,
-                        chat: "채팅 미리보기를 불러오지 못했습니다.",
-                    }));
-                }
+                if (ignore) return;
+                setSectionErrors((prev) => ({
+                    ...prev,
+                    plan: "불러오지 못했어요",
+                }));
             });
 
         return () => {
             ignore = true;
         };
-    }, [dashboard.teamCreated, lastUnreadEvent]);
+    }, [dashboard.teamCreated]);
 
     useEffect(() => {
         const getNoticeData = async () => {
@@ -205,7 +177,7 @@ const UserDashboard = () => {
         return () => clearInterval(timerId);
     }, []);
 
-    const blockTeamRequiredCard = (event, message) => {
+    const blockTeamRequired = (event, message) => {
         if (dashboard.teamCreated) return;
 
         event.preventDefault();
@@ -215,496 +187,280 @@ const UserDashboard = () => {
     const canWriteLog = isCapstoneLogTime(currentTime);
     const hero = !dashboard.teamCreated
         ? {
-              title: "팀 생성을 기다리고 있어요",
-              sub: "설문 제출이 완료됐습니다. 관리자가 AI로 팀을 생성하면 이 화면에서 바로 확인할 수 있어요.",
-              statusText: "팀 생성 대기 중",
-              noteText: "공지 확인하기",
-              noteTo: "/user/notice",
+              title: (
+                  <>
+                      팀이 만들어지면
+                      <br />
+                      바로 알려드릴게요
+                  </>
+              ),
+              sub: "설문 제출이 끝났어요. 관리자가 AI로 팀을 만들면 이 화면에서 팀원과 일정을 확인할 수 있어요.",
+              ctaText: "공지 확인하기",
+              ctaTo: "/user/notice",
           }
         : canWriteLog && !dashboard.todayJournalSubmitted
-        ? {
-              title: (
-                  <>
-                      오늘{" "}
-                      <span className={styles.heroTitleHighlight}>
-                          캡스톤 일지
-                      </span>
-                      를 작성해주세요
-                  </>
-              ),
-              sub: "아직 오늘 일지를 작성하지 않았습니다. 작성 가능 시간 안에 활동 내용을 남기면 팀원 일지와 함께 취합됩니다.",
-              countdownText: formatCountdownTime(
-                  getCapstoneLogRemainingMs(currentTime)
-              ),
-              ctaText: "일지 작성하기",
-              ctaTo: "/user/log",
-              noteText: "지난 일지 보기",
-              noteTo: "/user/log/result",
-          }
-        : canWriteLog
-        ? {
-              title: (
-                  <>
-                      오늘{" "}
-                      <span className={styles.heroTitleHighlight}>
-                          캡스톤 일지
-                      </span>{" "}
-                      작성을 완료했어요
-                  </>
-              ),
-              sub: "수고하셨습니다. 지난 일지는 언제든 다시 확인할 수 있습니다.",
-              ctaText: "지난 일지 보기",
-              ctaTo: "/user/log/result",
-          }
-        : {
-              title: (
-                  <>
-                      지금은{" "}
-                      <span className={styles.heroTitleHighlight}>
-                          캡스톤 일지
-                      </span>{" "}
-                      작성 시간이 아니에요
-                  </>
-              ),
-              sub: getCapstoneLogUnavailableText(currentTime),
-              ctaText: "지난 일지 보기",
-              ctaTo: "/user/log/result",
-          };
+          ? {
+                title: (
+                    <>
+                        오늘 캡스톤 일지를
+                        <br />
+                        작성할 시간이에요
+                    </>
+                ),
+                sub: "오늘 활동 내용을 남기면 팀원 일지와 함께 자동으로 취합돼요.",
+                countdownText: formatCountdownTime(
+                    getCapstoneLogRemainingMs(currentTime)
+                ),
+                ctaText: "일지 작성하기",
+                ctaTo: "/user/log",
+                noteText: "지난 일지 보기",
+                noteTo: "/user/log/result",
+            }
+          : canWriteLog
+            ? {
+                  title: (
+                      <>
+                          오늘 일지를
+                          <br />
+                          제출했어요
+                      </>
+                  ),
+                  sub: "수고했어요. 지난 일지는 언제든 다시 볼 수 있어요.",
+                  ctaText: "지난 일지 보기",
+                  ctaTo: "/user/log/result",
+              }
+            : {
+                  title: (
+                      <>
+                          오늘은 캡스톤 일지
+                          <br />
+                          작성일이 아니에요
+                      </>
+                  ),
+                  sub: getCapstoneLogUnavailableText(currentTime),
+                  ctaText: "지난 일지 보기",
+                  ctaTo: "/user/log/result",
+              };
 
-    const featuredNotice = notices[0];
-    const restNotices = notices.slice(1, 3);
+    const incompleteLabels = projectPlanStatus?.incompleteItemLabels ?? [];
+    const projectPlanValue = sectionErrors.plan
+        ? { text: sectionErrors.plan, isWarning: true }
+        : !projectPlanStatus
+          ? null
+          : incompleteLabels.length === 0
+            ? { text: "작성 완료", isWarning: false }
+            : {
+                  text:
+                      incompleteLabels.length === 1
+                          ? `${incompleteLabels[0]} 미작성`
+                          : `${incompleteLabels.length}개 항목 미작성`,
+                  isWarning: true,
+              };
 
     return (
         <div className={styles.page}>
             <Header />
 
-            {!isDashboardLoading && (
-                <main className={styles.body}>
-                    {error && <p className={styles.errorText}>{error}</p>}
-
-                    <section className={styles.hero}>
-                        <div className={styles.heroGrid}>
-                            <div>
-                                <div className={styles.heroEyebrow}>
-                                    학생 대시보드
-                                </div>
-                                <h1 className={styles.heroTitle}>
+            <main className={styles.body} ref={revealRef}>
+                {isDashboardLoading ? (
+                    <HomeSkeleton />
+                ) : error ? (
+                    <EmptyState
+                        variant="error"
+                        title="대시보드를 불러오지 못했어요"
+                        description={error}
+                    />
+                ) : (
+                    <>
+                        <section className={styles.hero}>
+                            <div className={styles.heroMain}>
+                                <p data-reveal className={styles.eyebrow}>
+                                    {user?.name ? `${user.name} 님` : "학생 홈"}
+                                </p>
+                                <h1 data-reveal className={styles.headline}>
                                     {hero.title}
                                 </h1>
-                                <p className={styles.heroSub}>{hero.sub}</p>
-
-                                {hero.countdownText && (
-                                    <p className={styles.countdownLine}>
-                                        작성 마감까지{" "}
-                                        <b>{hero.countdownText}</b>
-                                    </p>
-                                )}
-
-                                {hero.statusText && (
-                                    <p className={styles.countdownLine}>
-                                        설문 제출 완료 ·{" "}
-                                        <b>{hero.statusText}</b>
-                                    </p>
-                                )}
-
-                                {(hero.ctaText || hero.noteText) && (
-                                    <div className={styles.heroActions}>
-                                        {hero.ctaText && (
-                                            <Link
-                                                to={hero.ctaTo}
-                                                className={styles.heroCta}
-                                                onClick={(event) =>
-                                                    blockTeamRequiredCard(
-                                                        event,
-                                                        "팀 생성이 완료되면 캡스톤 일지를 작성할 수 있습니다."
-                                                    )
-                                                }
-                                            >
-                                                {hero.ctaText}
-                                            </Link>
-                                        )}
-                                        {hero.noteText && (
-                                            <span
-                                                className={styles.heroNote}
-                                            >
-                                                <Link to={hero.noteTo}>
-                                                    {hero.noteText}
-                                                </Link>
-                                            </span>
-                                        )}
-                                    </div>
-                                )}
-                            </div>
-
-                            <div className={styles.heroVisual}>
-                                <img
-                                    src={
-                                        dashboard.teamCreated
-                                            ? heroVisualDone
-                                            : heroVisualPending
-                                    }
-                                    alt=""
-                                />
-                            </div>
-                        </div>
-                    </section>
-
-                    <div className={styles.midSection}>
-                        {!dashboard.teamCreated ? (
-                            <div className={styles.sectionGrid}>
-                                {["프로젝트 기획서", "팀 채팅"].map(
-                                    (title) => (
-                                        <div
-                                            key={title}
-                                            className={`${styles.section} ${styles.sizeHalf} ${styles.tileDisabled}`}
-                                        >
-                                            <div
-                                                className={
-                                                    styles.sectionHeader
-                                                }
-                                            >
-                                                <div
-                                                    className={
-                                                        styles.sectionTitle
-                                                    }
-                                                >
-                                                    {title}
-                                                </div>
-                                            </div>
-                                            <p
-                                                className={
-                                                    styles.tileDisabledMsg
-                                                }
-                                            >
-                                                팀 생성이 완료되면 이용할 수
-                                                있습니다.
-                                            </p>
-                                        </div>
-                                    )
-                                )}
-                            </div>
-        ) : (
-                        <div className={styles.sectionGrid}>
-                            <div
-                                className={`${styles.section} ${styles.sizeHalf}`}
-                            >
-                                <div className={styles.sectionHeader}>
-                                    <div className={styles.sectionTitle}>
-                                        프로젝트 기획서
-                                    </div>
+                                <p data-reveal className={styles.subline}>
+                                    {hero.sub}
+                                </p>
+                                <div data-reveal className={styles.heroActions}>
                                     <Link
-                                        to="/user/project"
-                                        className={styles.sectionAction}
+                                        to={hero.ctaTo}
+                                        className={styles.primaryCta}
                                         onClick={(event) =>
-                                            blockTeamRequiredCard(
+                                            blockTeamRequired(
                                                 event,
-                                                "팀 생성이 완료되면 프로젝트 정보를 작성할 수 있습니다."
+                                                "팀 생성이 완료되면 캡스톤 일지를 작성할 수 있습니다."
                                             )
                                         }
                                     >
-                                        기획서 보기
+                                        {hero.ctaText}
                                     </Link>
+                                    {hero.noteText && (
+                                        <Link
+                                            to={hero.noteTo}
+                                            className={styles.secondaryCta}
+                                        >
+                                            {hero.noteText}
+                                        </Link>
+                                    )}
                                 </div>
+                            </div>
 
-                                {sectionErrors.plan ? (
-                                    <p className={styles.tileDisabledMsg}>
-                                        {sectionErrors.plan}
+                            {hero.countdownText && (
+                                <div data-reveal className={styles.statusPanel}>
+                                    <p className={styles.statusLabel}>
+                                        작성 마감까지
                                     </p>
-                                ) : dashboard.teamCreated &&
-                                  projectPlanStatus ? (
-                                    <>
-                                        <div className={styles.ratioChart}>
-                                            <div
-                                                className={styles.ratioTrack}
-                                            >
-                                                <div
+                                    <p className={styles.countdown}>
+                                        {hero.countdownText}
+                                    </p>
+                                </div>
+                            )}
+                        </section>
+
+                        <div className={styles.columns}>
+                            {/* 팀 생성 전에는 기획서·채팅 자체가 없으므로 섹션을 아예 만들지 않는다 */}
+                            {dashboard.teamCreated && (
+                                <section>
+                                    <h2
+                                        data-reveal
+                                        className={styles.sectionTitle}
+                                    >
+                                        내 캡스톤
+                                    </h2>
+                                    <div className={styles.rows}>
+                                        <Link
+                                            data-reveal
+                                            to="/user/project"
+                                            className={styles.row}
+                                        >
+                                            <span className={styles.rowLabel}>
+                                                프로젝트 기획서
+                                            </span>
+                                            <span className={styles.rowValue}>
+                                                {projectPlanValue && (
+                                                    <span
+                                                        className={
+                                                            projectPlanValue.isWarning
+                                                                ? styles.valueWarning
+                                                                : styles.valueStrong
+                                                        }
+                                                    >
+                                                        {projectPlanValue.text}
+                                                    </span>
+                                                )}
+                                                <ChevronIcon />
+                                            </span>
+                                        </Link>
+
+                                        <Link
+                                            data-reveal
+                                            to="/user/chat"
+                                            className={styles.row}
+                                        >
+                                            <span className={styles.rowLabel}>
+                                                팀 채팅
+                                            </span>
+                                            <span className={styles.rowValue}>
+                                                <span
                                                     className={
-                                                        styles.ratioFill
+                                                        unreadChatCount > 0
+                                                            ? styles.valueStrong
+                                                            : undefined
                                                     }
-                                                    style={{
-                                                        width: `${
-                                                            (projectPlanStatus.completedCount /
-                                                                projectPlanStatus.totalCount) *
-                                                            100
-                                                        }%`,
-                                                    }}
-                                                />
-                                            </div>
-                                            <div
-                                                className={styles.ratioLabel}
-                                            >
-                                                {
-                                                    projectPlanStatus.completedCount
-                                                }
-                                                <span>
-                                                    {" "}
-                                                    /{" "}
-                                                    {
-                                                        projectPlanStatus.totalCount
-                                                    }
-                                                    항목
+                                                >
+                                                    안 읽은 메시지{" "}
+                                                    {unreadChatCount}
                                                 </span>
-                                            </div>
-                                        </div>
-
-                                        <div className={styles.sectionList}>
-                                            {projectPlanStatus.incompleteItemLabels.length ===
-                                            0 ? (
-                                                <p
-                                                    className={
-                                                        styles.plainRowMeta
-                                                    }
-                                                >
-                                                    모든 항목이 작성됐습니다.
-                                                </p>
-                                            ) : (
-                                                projectPlanStatus.incompleteItemLabels.map(
-                                                    (label) => (
-                                                        <div
-                                                            key={label}
-                                                            className={
-                                                                styles.plainRow
-                                                            }
-                                                        >
-                                                            <div
-                                                                className={
-                                                                    styles.plainRowTitle
-                                                                }
-                                                            >
-                                                                {label}
-                                                            </div>
-                                                            <span
-                                                                className={`${styles.tag} ${styles.tagDanger}`}
-                                                            >
-                                                                미작성
-                                                            </span>
-                                                        </div>
-                                                    )
-                                                )
-                                            )}
-                                        </div>
-                                    </>
-                                ) : (
-                                    <p className={styles.tileMeta}>
-                                        팀 생성 전입니다
-                                    </p>
-                                )}
-                            </div>
-
-                            <div
-                                className={`${styles.section} ${styles.sizeHalf}`}
-                            >
-                                <div className={styles.sectionHeader}>
-                                    <div className={styles.sectionTitle}>
-                                        팀 채팅
+                                                <ChevronIcon />
+                                            </span>
+                                        </Link>
                                     </div>
-                                    <Link
-                                        to="/user/chat"
-                                        className={styles.sectionAction}
-                                        onClick={(event) =>
-                                            blockTeamRequiredCard(
-                                                event,
-                                                "팀 생성이 완료되면 팀 채팅을 사용할 수 있습니다."
-                                            )
-                                        }
-                                    >
-                                        채팅으로 이동
-                                    </Link>
-                                </div>
+                                </section>
+                            )}
 
-                                {sectionErrors.chat ? (
-                                    <p className={styles.tileDisabledMsg}>
-                                        {sectionErrors.chat}
-                                    </p>
-                                ) : dashboard.teamCreated ? (
-                                    <>
-                                        <p className={styles.tileMeta}>
-                                            읽지 않은 메시지{" "}
-                                            <b>{unreadChatCount}개</b>
-                                        </p>
-                                        <div className={styles.sectionList}>
-                                            {recentMessages.length === 0 ? (
-                                                <p
-                                                    className={
-                                                        styles.tileMeta
-                                                    }
-                                                >
-                                                    아직 대화가 없습니다.
-                                                </p>
-                                            ) : (
-                                                recentMessages.map(
-                                                    (message) => (
-                                                        <div
-                                                            key={
-                                                                message.createdAt
-                                                            }
-                                                            className={
-                                                                styles.plainRow
-                                                            }
-                                                        >
-                                                            <div>
-                                                                <div
-                                                                    className={
-                                                                        styles.plainRowTitle
-                                                                    }
-                                                                >
-                                                                    {
-                                                                        message.senderName
-                                                                    }
-                                                                </div>
-                                                                <div
-                                                                    className={
-                                                                        styles.plainRowMeta
-                                                                    }
-                                                                >
-                                                                    {
-                                                                        message.timeText
-                                                                    }{" "}
-                                                                    ·{" "}
-                                                                    {
-                                                                        message.preview
-                                                                    }
-                                                                </div>
-                                                            </div>
-                                                        </div>
-                                                    )
-                                                )
-                                            )}
-                                        </div>
-                                    </>
-                                ) : (
-                                    <p className={styles.tileMeta}>
-                                        팀 생성 전입니다
-                                    </p>
-                                )}
-                            </div>
-                        </div>
-                        )}
-                    </div>
-
-                    <div className={styles.bottomSection}>
-                        <div className={styles.section}>
-                            <div className={styles.sectionHeader}>
-                                <div className={styles.sectionTitle}>
-                                    최근 공지
-                                </div>
-                                <Link
-                                    to="/user/notice"
-                                    className={styles.sectionAction}
+                            <section>
+                                <div
+                                    data-reveal
+                                    className={styles.sectionHeader}
                                 >
-                                    전체보기
-                                </Link>
-                            </div>
-
-                            {featuredNotice ? (
-                                <div className={styles.noticeLayout}>
+                                    <h2 className={styles.sectionTitle}>공지</h2>
                                     <Link
-                                        to={`/user/notice/${featuredNotice.id}`}
-                                        className={styles.noticeFeatured}
+                                        to="/user/notice"
+                                        className={styles.sectionAction}
                                     >
-                                        {featuredNotice.important ===
-                                            "IMPORTANT" && (
-                                            <span
-                                                className={`${styles.tag} ${styles.tagMint}`}
-                                            >
-                                                중요
-                                            </span>
-                                        )}
-                                        <div
-                                            className={
-                                                styles.noticeFeaturedTitle
-                                            }
-                                        >
-                                            {featuredNotice.title}
-                                        </div>
-                                        {featuredNotice.content && (
-                                            <p
-                                                className={
-                                                    styles.noticeFeaturedExcerpt
-                                                }
-                                            >
-                                                {truncateText(
-                                                    stripMarkdown(
-                                                        featuredNotice.content
-                                                    ),
-                                                    80
-                                                )}
-                                            </p>
-                                        )}
-                                        <div
-                                            className={
-                                                styles.noticeFeaturedFoot
-                                            }
-                                        >
-                                            <span
-                                                className={
-                                                    styles.noticeFeaturedMeta
-                                                }
-                                            >
-                                                {featuredNotice.writer} ·{" "}
-                                                {formatCreatedAt(
-                                                    featuredNotice.createdAt
-                                                )}
-                                            </span>
-                                            <span
-                                                className={
-                                                    styles.noticeFeaturedLink
-                                                }
-                                            >
-                                                자세히 보기
-                                            </span>
-                                        </div>
+                                        전체보기
                                     </Link>
+                                </div>
 
-                                    <div
-                                        className={styles.noticeListCompact}
-                                    >
-                                        {restNotices.map((notice) => (
+                                {sectionErrors.notices ? (
+                                    <EmptyState
+                                        variant="error"
+                                        title="공지를 불러오지 못했어요"
+                                        description={sectionErrors.notices}
+                                    />
+                                ) : notices.length === 0 ? (
+                                    <EmptyState
+                                        title="아직 등록된 공지가 없어요"
+                                        description="새 공지가 올라오면 여기에서 바로 확인할 수 있어요."
+                                    />
+                                ) : (
+                                    <div className={styles.rows}>
+                                        {notices.map((notice, index) => (
                                             <Link
                                                 key={notice.id}
+                                                data-reveal
                                                 to={`/user/notice/${notice.id}`}
-                                                className={
-                                                    styles.noticeCompactRow
-                                                }
+                                                className={styles.noticeRow}
                                             >
                                                 {notice.important ===
                                                     "IMPORTANT" && (
                                                     <span
-                                                        className={`${styles.tag} ${styles.tagMint}`}
+                                                        className={styles.badge}
                                                     >
                                                         중요
                                                     </span>
                                                 )}
-                                                <div
+                                                <p
                                                     className={
-                                                        styles.plainRowTitle
+                                                        styles.noticeTitle
                                                     }
                                                 >
                                                     {notice.title}
-                                                </div>
-                                                <div
-                                                    className={
-                                                        styles.plainRowMeta
-                                                    }
+                                                </p>
+                                                {index === 0 &&
+                                                    notice.content && (
+                                                        <p
+                                                            className={
+                                                                styles.noticeExcerpt
+                                                            }
+                                                        >
+                                                            {truncateText(
+                                                                stripMarkdown(
+                                                                    notice.content
+                                                                ),
+                                                                80
+                                                            )}
+                                                        </p>
+                                                    )}
+                                                <p
+                                                    className={styles.noticeMeta}
                                                 >
                                                     {notice.writer} ·{" "}
                                                     {formatCreatedAt(
                                                         notice.createdAt
                                                     )}
-                                                </div>
+                                                </p>
                                             </Link>
                                         ))}
                                     </div>
-                                </div>
-                            ) : (
-                                <p className={styles.tileMeta}>
-                                    등록된 공지가 없습니다.
-                                </p>
-                            )}
+                                )}
+                            </section>
                         </div>
-                    </div>
-                </main>
-            )}
+                    </>
+                )}
+            </main>
 
             {teamRequiredModal && (
                 <TeamRequiredModal

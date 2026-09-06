@@ -1,8 +1,12 @@
-// Design/AdminDashboard.html 반영.
+// Design/admin-home.html 반영.
+// 팀 생성 전에는 팀·일지·채팅방이 아예 없으므로 관련 숫자와 섹션을 자리째로 만들지 않는다.
 import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import Header from "../../../components/common/header/Header";
 import TeamRequiredModal from "../../../components/common/modal/TeamRequiredModal";
+import Skeleton from "../../../components/common/skeleton/Skeleton";
+import EmptyState from "../../../components/common/empty/EmptyState";
+import useInView from "../../../hooks/useInView";
 import { requestAdminDashboard } from "../../../api/dashboardApi";
 import { requestAdminStudentList } from "../../../api/studentApi";
 import { requestAdminLogList } from "../../../api/logApi";
@@ -17,17 +21,11 @@ import {
     isCapstoneLogTime,
 } from "../../../utils/capstoneLogTime";
 import { formatChatTime } from "../../../utils/chat";
-import {
-    formatCreatedAt,
-    stripMarkdown,
-    truncateText,
-} from "../../../utils/format";
+import { formatCreatedAt } from "../../../utils/format";
 import { gradeLabels } from "../../../constants/team";
 import { getAdminTeamCreationStatus } from "../../../utils/teamStatus";
 import { setStoredAdminTeamCreated } from "../../../utils/adminTeamStatusStorage";
 import useUnreadChatCount from "../../../hooks/useUnreadChatCount";
-import heroVisualPending from "../../../assets/images/dashboardHeroPuzzle.png";
-import heroVisualCreated from "../../../assets/images/dashboardHeroPuzzleUser.png";
 import styles from "./AdminDashboard.module.css";
 
 const countSurveyProgress = (students, grade) => {
@@ -71,6 +69,72 @@ const fetchRecentMessages = async (rooms) => {
         .slice(0, 2);
 };
 
+const toPercent = (value, total) => (total ? (value / total) * 100 : 0);
+
+const ChevronIcon = () => (
+    <svg
+        className={styles.chevron}
+        width="18"
+        height="18"
+        viewBox="0 0 24 24"
+        fill="none"
+        stroke="currentColor"
+        strokeWidth="1.8"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+        aria-hidden="true"
+    >
+        <path d="m9 18 6-6-6-6" />
+    </svg>
+);
+
+const ProgressBar = ({ label, value, percent }) => (
+    <div className={styles.progress}>
+        <div className={styles.progressHead}>
+            <span className={styles.progressLabel}>{label}</span>
+            <span className={styles.progressValue}>{value}</span>
+        </div>
+        <div className={styles.progressTrack}>
+            <div
+                className={styles.progressFill}
+                style={{ width: `${percent}%` }}
+            />
+        </div>
+    </div>
+);
+
+const HomeSkeleton = () => (
+    <>
+        <div className={styles.hero}>
+            <div className={styles.heroMain}>
+                <Skeleton width={176} height={20} />
+                <Skeleton width="min(520px, 100%)" height={44} style={{ marginTop: 20 }} />
+                <Skeleton width="50%" height={44} style={{ marginTop: 12 }} />
+                <Skeleton width="min(420px, 66%)" height={24} style={{ marginTop: 28 }} />
+                <Skeleton width={176} height={48} style={{ marginTop: 36 }} />
+            </div>
+            <div className={styles.statusPanel}>
+                <Skeleton width={112} height={20} />
+                <Skeleton width={192} height={48} style={{ marginTop: 8 }} />
+            </div>
+        </div>
+        <Skeleton height={64} />
+        <div className={styles.columns}>
+            <div>
+                <Skeleton width={160} height={24} />
+                <Skeleton height={40} style={{ marginTop: 20 }} />
+                <Skeleton height={48} style={{ marginTop: 24 }} />
+                <Skeleton height={48} style={{ marginTop: 12 }} />
+            </div>
+            <div>
+                <Skeleton width={80} height={24} />
+                <Skeleton height={48} style={{ marginTop: 20 }} />
+                <Skeleton height={48} style={{ marginTop: 12 }} />
+            </div>
+        </div>
+    </>
+);
+
 const AdminDashboard = () => {
     const [dashboard, setDashboard] = useState({
         teamCreated: false,
@@ -100,6 +164,14 @@ const AdminDashboard = () => {
     const [currentTime, setCurrentTime] = useState(new Date());
     const [error, setError] = useState("");
     const [teamRequiredModal, setTeamRequiredModal] = useState(null);
+
+    const teamStatus = getAdminTeamCreationStatus(dashboard);
+    const isTeamManageAccessible = teamStatus.teamManageAccessible;
+    const { unreadChatCount } = useUnreadChatCount({
+        enabled: isTeamManageAccessible,
+    });
+
+    const revealRef = useInView({ replayKey: isDashboardLoading });
 
     useEffect(() => {
         const getDashboardData = async () => {
@@ -199,18 +271,14 @@ const AdminDashboard = () => {
         return () => clearInterval(timerId);
     }, []);
 
-    const teamStatus = getAdminTeamCreationStatus(dashboard);
-    const isTeamManageAccessible = teamStatus.teamManageAccessible;
     const nextGrade = !teamStatus.grade2TeamCreated
         ? "GRADE_2"
         : !teamStatus.grade3TeamCreated
-        ? "GRADE_3"
-        : null;
-    const { unreadChatCount } = useUnreadChatCount({
-        enabled: isTeamManageAccessible,
-    });
+          ? "GRADE_3"
+          : null;
+    const isSetup = Boolean(nextGrade);
 
-    const blockTeamRequiredCard = (event, message) => {
+    const blockTeamRequired = (event, message) => {
         if (isTeamManageAccessible) return;
 
         event.preventDefault();
@@ -218,588 +286,508 @@ const AdminDashboard = () => {
     };
 
     const nextGradeSurvey =
-        nextGrade === "GRADE_3"
-            ? surveyProgress.grade3
-            : surveyProgress.grade2;
-    const nextGradeRespondedCount = nextGradeSurvey.responded;
-    const nextGradeTotalCount = nextGradeSurvey.total;
-    const nextGradeSurveyPercent = nextGradeTotalCount
-        ? Math.round((nextGradeRespondedCount / nextGradeTotalCount) * 100)
-        : 0;
+        nextGrade === "GRADE_3" ? surveyProgress.grade3 : surveyProgress.grade2;
+    const nextGradeSurveyPercent = Math.round(
+        toPercent(nextGradeSurvey.responded, nextGradeSurvey.total)
+    );
 
-    const grade2NotResponded =
-        surveyProgress.grade2.total - surveyProgress.grade2.responded;
-    const grade3NotResponded =
-        surveyProgress.grade3.total - surveyProgress.grade3.responded;
+    const totalSurveyResponded =
+        surveyProgress.grade2.responded + surveyProgress.grade3.responded;
+    const totalSurveyTarget =
+        surveyProgress.grade2.total + surveyProgress.grade3.total;
 
-    const journalRatioPercent = journalStatus.totalTeamCount
-        ? (journalStatus.submittedTeamCount / journalStatus.totalTeamCount) *
-          100
-        : 0;
+    const isLogTime = isCapstoneLogTime(currentTime);
+    const notSubmittedCount = journalStatus.notSubmittedTeamNames.length;
+    const countdownText = formatCountdownTime(
+        getCapstoneLogRemainingMs(currentTime)
+    );
 
-    const featuredNotice = notices[0];
-    const restNotices = notices.slice(1, 3);
+    const hero = isSetup
+        ? {
+              title: (
+                  <>
+                      {gradeLabels[nextGrade]} 팀을
+                      <br />
+                      생성할 차례예요
+                  </>
+              ),
+              sub:
+                  nextGradeSurveyPercent === 100
+                      ? "설문 응답이 전부 모였어요. 지금 생성하면 AI가 역할·실력 균형을 맞춰 팀을 추천합니다."
+                      : `${gradeLabels[nextGrade]} 설문 응답이 ${nextGradeSurveyPercent}% 모였어요. 전체 학생이 설문을 완료해야 팀을 생성할 수 있습니다.`,
+              progress: {
+                  label: `${gradeLabels[nextGrade]} 설문 완료`,
+                  value: `${nextGradeSurvey.responded} / ${nextGradeSurvey.total}명 · ${nextGradeSurveyPercent}%`,
+                  percent: nextGradeSurveyPercent,
+              },
+              ctaText: `${gradeLabels[nextGrade]} 팀 생성하기`,
+              ctaTo: "/admin/team-create",
+              noteText: "학생 관리",
+              noteTo: "/admin/student",
+          }
+        : isLogTime && notSubmittedCount > 0
+          ? {
+                title: (
+                    <>
+                        오늘 {notSubmittedCount}팀이
+                        <br />
+                        일지를 내지 않았어요
+                    </>
+                ),
+                sub: `마감까지 ${countdownText} 남았어요. 미제출 팀과 제출 현황을 확인해 보세요.`,
+                countdownText,
+                ctaText: "일지 제출 현황 보기",
+                ctaTo: "/admin/log",
+                noteText: "팀 관리",
+                noteTo: "/admin/team-manage",
+            }
+          : isLogTime
+            ? {
+                  title: (
+                      <>
+                          오늘 모든 팀이
+                          <br />
+                          일지를 제출했어요
+                      </>
+                  ),
+                  sub: "미제출 팀이 없습니다. 제출된 일지는 캡스톤 일지에서 팀별로 확인할 수 있어요.",
+                  countdownText,
+                  ctaText: "일지 확인하기",
+                  ctaTo: "/admin/log",
+                  noteText: "팀 관리",
+                  noteTo: "/admin/team-manage",
+              }
+            : {
+                  title: (
+                      <>
+                          이번 학기 {dashboard.totalTeamCount}팀이
+                          <br />
+                          운영 중이에요
+                      </>
+                  ),
+                  sub: `2학년 ${dashboard.grade2TeamCount}팀, 3학년 ${dashboard.grade3TeamCount}팀이 확정되어 프로젝트를 진행 중입니다.`,
+                  ctaText: "팀 관리 보기",
+                  ctaTo: "/admin/team-manage",
+                  noteText: "학생 관리",
+                  noteTo: "/admin/student",
+              };
 
     return (
         <div className={styles.page}>
             <Header />
 
-            {!isDashboardLoading && (
-                <main className={styles.body}>
-                    {error && <p className={styles.errorText}>{error}</p>}
+            <main className={styles.body} ref={revealRef}>
+                {isDashboardLoading ? (
+                    <HomeSkeleton />
+                ) : error ? (
+                    <EmptyState
+                        variant="error"
+                        title="대시보드를 불러오지 못했어요"
+                        description={error}
+                    />
+                ) : (
+                    <>
+                        <section className={styles.hero}>
+                            <div className={styles.heroMain}>
+                                <p data-reveal className={styles.eyebrow}>
+                                    캡스톤 관리자
+                                </p>
+                                <h1 data-reveal className={styles.headline}>
+                                    {hero.title}
+                                </h1>
+                                <p data-reveal className={styles.subline}>
+                                    {hero.sub}
+                                </p>
 
-                    <section className={styles.hero}>
-                        <div className={styles.heroGrid}>
-                            <div>
-                                <div className={styles.heroEyebrow}>
-                                    관리자 대시보드
-                                </div>
-
-                                {nextGrade ? (
-                                    <>
-                                        <h1 className={styles.heroTitle}>
-                                            <em>{gradeLabels[nextGrade]}</em>{" "}
-                                            팀을 생성해주세요
-                                        </h1>
-                                        <p className={styles.heroSub}>
-                                            {nextGradeSurveyPercent === 100 ? (
-                                                <>
-                                                    설문 응답이 100% 모였습니다.
-                                                    지금 생성하면 AI가 역할과
-                                                    실력 균형을 고려해 팀을
-                                                    추천합니다.
-                                                </>
-                                            ) : (
-                                                <>
-                                                    설문 응답이{" "}
-                                                    {nextGradeSurveyPercent}%
-                                                    모였습니다. 전체 학생이
-                                                    설문을 완료해야 팀을 생성할
-                                                    수 있습니다.
-                                                </>
-                                            )}
-                                        </p>
-
-                                        <div className={styles.heroProgress}>
-                                            <div
-                                                className={
-                                                    styles.heroProgressTrack
-                                                }
-                                            >
-                                                <div
-                                                    className={
-                                                        styles.heroProgressFill
-                                                    }
-                                                    style={{
-                                                        width: `${nextGradeSurveyPercent}%`,
-                                                    }}
-                                                />
-                                            </div>
-                                            <div
-                                                className={
-                                                    styles.heroProgressLabel
-                                                }
-                                            >
-                                                {gradeLabels[nextGrade]} 설문
-                                                완료{" "}
-                                                <b>
-                                                    {nextGradeRespondedCount} /{" "}
-                                                    {nextGradeTotalCount}명
-                                                </b>{" "}
-                                                · {nextGradeSurveyPercent}%
-                                            </div>
-                                        </div>
-
-                                        <div className={styles.heroActions}>
-                                            <Link
-                                                to="/admin/team-create"
-                                                className={styles.heroCta}
-                                            >
-                                                {gradeLabels[nextGrade]} 팀
-                                                생성하기
-                                            </Link>
-                                        </div>
-                                    </>
-                                ) : (
-                                    <>
-                                        <h1 className={styles.heroTitle}>
-                                            이번 학기{" "}
-                                            <em>{dashboard.totalTeamCount}팀</em>{" "}
-                                            생성이 완료됐어요
-                                        </h1>
-                                        <p className={styles.heroSub}>
-                                            2학년 {dashboard.grade2TeamCount}
-                                            팀, 3학년 {dashboard.grade3TeamCount}
-                                            팀이 모두 확정되어 프로젝트를 진행
-                                            중입니다.
-                                        </p>
-
-                                        <div className={styles.heroProgress}>
-                                            <div
-                                                className={
-                                                    styles.heroProgressTrack
-                                                }
-                                            >
-                                                <div
-                                                    className={
-                                                        styles.heroProgressFill
-                                                    }
-                                                    style={{ width: "100%" }}
-                                                />
-                                            </div>
-                                            <div
-                                                className={
-                                                    styles.heroProgressLabel
-                                                }
-                                            >
-                                                학생 설문 · 팀 생성 <b>완료</b>{" "}
-                                                · 100%
-                                            </div>
-                                        </div>
-
-                                        <div className={styles.heroActions}>
-                                            <Link
-                                                to="/admin/team-manage"
-                                                className={styles.heroCta}
-                                            >
-                                                팀 관리 보기
-                                            </Link>
-                                        </div>
-                                    </>
-                                )}
-                            </div>
-
-                            <div className={styles.heroVisual}>
-                                <img
-                                    src={
-                                        nextGrade
-                                            ? heroVisualPending
-                                            : heroVisualCreated
-                                    }
-                                    alt=""
-                                />
-                            </div>
-                        </div>
-                    </section>
-
-                    <div className={styles.midSection}>
-                        <div className={styles.sectionGrid}>
-                            <div
-                                className={`${styles.section} ${styles.sizeSm}`}
-                            >
-                                <div className={styles.sectionHeader}>
-                                    <div className={styles.sectionTitle}>
-                                        학생 현황
-                                    </div>
-                                    <Link
-                                        to="/admin/student"
-                                        className={styles.sectionAction}
+                                {hero.progress && (
+                                    <div
+                                        data-reveal
+                                        className={styles.heroProgress}
                                     >
-                                        학생 관리
+                                        <ProgressBar {...hero.progress} />
+                                    </div>
+                                )}
+
+                                <div data-reveal className={styles.heroActions}>
+                                    {/* 팀 생성 화면으로 가는 CTA는 막으면 안 된다 —
+                                        팀이 없어서 여기까지 온 것이기 때문 */}
+                                    <Link
+                                        to={hero.ctaTo}
+                                        className={styles.primaryCta}
+                                        onClick={(event) => {
+                                            if (isSetup) return;
+
+                                            blockTeamRequired(
+                                                event,
+                                                "팀 생성이 완료되면 이용할 수 있습니다."
+                                            );
+                                        }}
+                                    >
+                                        {hero.ctaText}
+                                    </Link>
+                                    <Link
+                                        to={hero.noteTo}
+                                        className={styles.secondaryCta}
+                                    >
+                                        {hero.noteText}
                                     </Link>
                                 </div>
-                                {sectionErrors.students ? (
-                                    <p className={styles.tileDisabledMsg}>
-                                        {sectionErrors.students}
-                                    </p>
-                                ) : (
-                                    <>
-                                        <p className={styles.tileMeta}>
-                                            전체{" "}
-                                            <b>
-                                                {dashboard.totalStudentCount}명
-                                            </b>{" "}
-                                            등록
-                                        </p>
-                                        <div className={styles.miniBars}>
-                                            <div className={styles.miniBarRow}>
-                                                <span
-                                                    className={
-                                                        styles.miniBarLabel
-                                                    }
-                                                >
-                                                    2학년
-                                                </span>
-                                                <div
-                                                    className={
-                                                        styles.miniBarTrack
-                                                    }
-                                                >
-                                                    <div
-                                                        className={
-                                                            styles.miniBarFill
-                                                        }
-                                                        style={{
-                                                            width: `${
-                                                                surveyProgress
-                                                                    .grade2
-                                                                    .total
-                                                                    ? (surveyProgress
-                                                                          .grade2
-                                                                          .responded /
-                                                                          surveyProgress
-                                                                              .grade2
-                                                                              .total) *
-                                                                      100
-                                                                    : 0
-                                                            }%`,
-                                                        }}
-                                                    />
-                                                </div>
-                                                <span
-                                                    className={
-                                                        styles.miniBarValue
-                                                    }
-                                                >
-                                                    {surveyProgress.grade2.responded}
-                                                    /{surveyProgress.grade2.total}
-                                                </span>
-                                            </div>
-                                            <div className={styles.miniBarRow}>
-                                                <span
-                                                    className={
-                                                        styles.miniBarLabel
-                                                    }
-                                                >
-                                                    3학년
-                                                </span>
-                                                <div
-                                                    className={
-                                                        styles.miniBarTrack
-                                                    }
-                                                >
-                                                    <div
-                                                        className={
-                                                            styles.miniBarFill
-                                                        }
-                                                        style={{
-                                                            width: `${
-                                                                surveyProgress
-                                                                    .grade3
-                                                                    .total
-                                                                    ? (surveyProgress
-                                                                          .grade3
-                                                                          .responded /
-                                                                          surveyProgress
-                                                                              .grade3
-                                                                              .total) *
-                                                                      100
-                                                                    : 0
-                                                            }%`,
-                                                        }}
-                                                    />
-                                                </div>
-                                                <span
-                                                    className={
-                                                        styles.miniBarValue
-                                                    }
-                                                >
-                                                    {surveyProgress.grade3.responded}
-                                                    /{surveyProgress.grade3.total}
-                                                </span>
-                                            </div>
-                                        </div>
-                                        <p className={styles.plainRowMeta}>
-                                            설문 미제출 2학년{" "}
-                                            {grade2NotResponded}명 · 3학년{" "}
-                                            {grade3NotResponded}명
-                                        </p>
-                                    </>
-                                )}
                             </div>
 
-                            <div
-                                className={`${styles.section} ${styles.sizeLg}`}
-                            >
-                                <div className={styles.sectionHeader}>
-                                    <div className={styles.sectionTitle}>
-                                        캡스톤 일지 제출 현황
+                            {hero.countdownText && (
+                                <div data-reveal className={styles.statusPanel}>
+                                    <p className={styles.statusLabel}>
+                                        오늘 일지 마감까지
+                                    </p>
+                                    <p className={styles.countdown}>
+                                        {hero.countdownText}
+                                    </p>
+                                </div>
+                            )}
+                        </section>
+
+                        {/* 핵심 숫자 — 박스 없이 구분선으로만 */}
+                        <div data-reveal className={styles.statRow}>
+                            <div className={styles.stat}>
+                                <p className={styles.statLabel}>전체 학생</p>
+                                <p className={styles.statValue}>
+                                    {dashboard.totalStudentCount}명{" "}
+                                    <span className={styles.statSub}>
+                                        2학년 {surveyProgress.grade2.total} ·
+                                        3학년 {surveyProgress.grade3.total}
+                                    </span>
+                                </p>
+                            </div>
+
+                            {isSetup ? (
+                                <div className={styles.stat}>
+                                    <p className={styles.statLabel}>설문 완료</p>
+                                    <p className={styles.statValue}>
+                                        {totalSurveyResponded}명{" "}
+                                        <span className={styles.statSub}>
+                                            / {totalSurveyTarget}명
+                                        </span>
+                                    </p>
+                                </div>
+                            ) : (
+                                <>
+                                    <div className={styles.stat}>
+                                        <p className={styles.statLabel}>
+                                            생성된 팀
+                                        </p>
+                                        <p className={styles.statValue}>
+                                            {dashboard.totalTeamCount}팀{" "}
+                                            <span className={styles.statSub}>
+                                                2학년 {dashboard.grade2TeamCount}{" "}
+                                                · 3학년{" "}
+                                                {dashboard.grade3TeamCount}
+                                            </span>
+                                        </p>
                                     </div>
+                                    {isLogTime && (
+                                        <div className={styles.stat}>
+                                            <p className={styles.statLabel}>
+                                                오늘 미제출
+                                            </p>
+                                            <p
+                                                className={`${styles.statValue} ${
+                                                    notSubmittedCount > 0
+                                                        ? styles.statDanger
+                                                        : ""
+                                                }`}
+                                            >
+                                                {notSubmittedCount}팀
+                                            </p>
+                                        </div>
+                                    )}
+                                    <div className={styles.stat}>
+                                        <p className={styles.statLabel}>
+                                            안 읽은 메시지
+                                        </p>
+                                        <p className={styles.statValue}>
+                                            {unreadChatCount}개
+                                        </p>
+                                    </div>
+                                </>
+                            )}
+                        </div>
+
+                        <div className={styles.columns}>
+                            <section>
+                                <div
+                                    data-reveal
+                                    className={styles.sectionHeader}
+                                >
+                                    <h2 className={styles.sectionTitle}>
+                                        {isSetup
+                                            ? "설문 응답 현황"
+                                            : "캡스톤 일지 제출 현황"}
+                                    </h2>
                                     <Link
-                                        to="/admin/log"
+                                        to={
+                                            isSetup
+                                                ? "/admin/student"
+                                                : "/admin/log"
+                                        }
                                         className={styles.sectionAction}
                                         onClick={(event) =>
-                                            blockTeamRequiredCard(
-                                                event,
-                                                "팀 생성이 완료되면 팀별 캡스톤 일지를 확인할 수 있습니다."
-                                            )
+                                            isSetup
+                                                ? undefined
+                                                : blockTeamRequired(
+                                                      event,
+                                                      "팀 생성이 완료되면 팀별 캡스톤 일지를 확인할 수 있습니다."
+                                                  )
                                         }
                                     >
                                         전체보기
                                     </Link>
                                 </div>
-                                {sectionErrors.journal ? (
-                                    <p className={styles.tileDisabledMsg}>
-                                        {sectionErrors.journal}
-                                    </p>
-                                ) : isCapstoneLogTime(currentTime) ? (
-                                    <>
-                                        <div className={styles.ratioChart}>
-                                            <div
-                                                className={styles.ratioTrack}
-                                            >
-                                                <div
-                                                    className={
-                                                        styles.ratioFill
-                                                    }
-                                                    style={{
-                                                        width: `${journalRatioPercent}%`,
-                                                    }}
-                                                />
-                                            </div>
-                                            <div
-                                                className={styles.ratioLabel}
-                                            >
-                                                {journalStatus.submittedTeamCount}
-                                                <span>
-                                                    {" "}
-                                                    /{" "}
-                                                    {journalStatus.totalTeamCount}
-                                                    팀
-                                                </span>
-                                            </div>
-                                        </div>
-                                        <p className={styles.countdownLine}>
-                                            제출 마감까지{" "}
-                                            <b>
-                                                {formatCountdownTime(
-                                                    getCapstoneLogRemainingMs(
-                                                        currentTime
-                                                    )
-                                                )}
-                                            </b>
-                                        </p>
-                                        <div className={styles.sectionList}>
-                                            {journalStatus.notSubmittedTeamNames.map(
-                                                (teamName) => (
+
+                                {isSetup ? (
+                                    sectionErrors.students ? (
+                                        <EmptyState
+                                            variant="error"
+                                            title="학생 현황을 불러오지 못했어요"
+                                            description={sectionErrors.students}
+                                        />
+                                    ) : (
+                                        <div className={styles.progressList}>
+                                            {["grade2", "grade3"].map((key) => {
+                                                const grade =
+                                                    surveyProgress[key];
+                                                const remaining =
+                                                    grade.total -
+                                                    grade.responded;
+
+                                                return (
                                                     <div
-                                                        key={teamName}
-                                                        className={
-                                                            styles.plainRow
-                                                        }
+                                                        key={key}
+                                                        data-reveal
                                                     >
-                                                        <div
-                                                            className={
-                                                                styles.plainRowTitle
+                                                        <ProgressBar
+                                                            label={
+                                                                key === "grade2"
+                                                                    ? "2학년"
+                                                                    : "3학년"
                                                             }
-                                                        >
-                                                            {teamName}
-                                                        </div>
-                                                        <span
-                                                            className={`${styles.tag} ${styles.tagDanger}`}
-                                                        >
-                                                            미제출
-                                                        </span>
+                                                            value={`${grade.responded} / ${grade.total}명 · ${
+                                                                remaining === 0
+                                                                    ? "완료"
+                                                                    : `${remaining}명 미제출`
+                                                            }`}
+                                                            percent={toPercent(
+                                                                grade.responded,
+                                                                grade.total
+                                                            )}
+                                                        />
                                                     </div>
-                                                )
-                                            )}
+                                                );
+                                            })}
                                         </div>
-                                    </>
+                                    )
+                                ) : sectionErrors.journal ? (
+                                    <EmptyState
+                                        variant="error"
+                                        title="일지 제출 현황을 불러오지 못했어요"
+                                        description={sectionErrors.journal}
+                                    />
+                                ) : !isLogTime ? (
+                                    <EmptyState
+                                        title="오늘은 일지 작성일이 아니에요"
+                                        description="작성일에 팀별 제출 현황이 여기에 표시됩니다."
+                                    />
                                 ) : (
-                                    <p className={styles.tileDisabledMsg}>
-                                        오늘은 캡스톤 일지 작성일이 아닙니다.
-                                    </p>
-                                )}
-                            </div>
+                                    <>
+                                        <div data-reveal>
+                                            <ProgressBar
+                                                label="제출한 팀"
+                                                value={`${journalStatus.submittedTeamCount} / ${journalStatus.totalTeamCount}팀`}
+                                                percent={toPercent(
+                                                    journalStatus.submittedTeamCount,
+                                                    journalStatus.totalTeamCount
+                                                )}
+                                            />
+                                        </div>
 
-                            <div
-                                className={`${styles.section} ${styles.sizeMd}`}
-                            >
-                                <div className={styles.sectionHeader}>
-                                    <div className={styles.sectionTitle}>
-                                        팀별 채팅방
-                                    </div>
-                                    <Link
-                                        to="/admin/chat"
-                                        className={styles.sectionAction}
-                                        onClick={(event) =>
-                                            blockTeamRequiredCard(
-                                                event,
-                                                "팀 생성이 완료되면 팀별 채팅방을 확인할 수 있습니다."
-                                            )
-                                        }
-                                    >
-                                        채팅 관리
-                                    </Link>
-                                </div>
-                                <p className={styles.tileMeta}>
-                                    운영 중인 채팅방{" "}
-                                    <b>{dashboard.activeChatRoomCount}개</b> ·
-                                    읽지 않은 메시지 {unreadChatCount}개
-                                </p>
-                                {sectionErrors.chat ? (
-                                    <p className={styles.tileDisabledMsg}>
-                                        {sectionErrors.chat}
-                                    </p>
-                                ) : (
-                                    <div className={styles.sectionList}>
-                                        {recentMessages.length === 0 ? (
-                                            <p className={styles.tileMeta}>
-                                                아직 대화가 없습니다.
-                                            </p>
-                                        ) : (
-                                            recentMessages.map((message) => (
-                                                <div
-                                                    key={
-                                                        message.teamName +
-                                                        message.createdAt
-                                                    }
-                                                    className={
-                                                        styles.plainRow
-                                                    }
+                                        {notSubmittedCount > 0 && (
+                                            <>
+                                                <p
+                                                    data-reveal
+                                                    className={styles.listLabel}
                                                 >
-                                                    <div>
-                                                        <div
-                                                            className={
-                                                                styles.plainRowTitle
-                                                            }
-                                                        >
-                                                            {message.teamName}
-                                                        </div>
-                                                        <div
-                                                            className={
-                                                                styles.plainRowMeta
-                                                            }
-                                                        >
-                                                            {message.timeText}{" "}
-                                                            ·{" "}
-                                                            {message.preview}
-                                                        </div>
-                                                    </div>
+                                                    아직 안 낸 팀
+                                                </p>
+                                                <div className={styles.rows}>
+                                                    {journalStatus.notSubmittedTeamNames.map(
+                                                        (teamName) => (
+                                                            <Link
+                                                                key={teamName}
+                                                                data-reveal
+                                                                to="/admin/log"
+                                                                className={
+                                                                    styles.row
+                                                                }
+                                                            >
+                                                                <span
+                                                                    className={
+                                                                        styles.rowLabel
+                                                                    }
+                                                                >
+                                                                    {teamName}
+                                                                </span>
+                                                                <span
+                                                                    className={
+                                                                        styles.rowValue
+                                                                    }
+                                                                >
+                                                                    <span
+                                                                        className={
+                                                                            styles.valueWarning
+                                                                        }
+                                                                    >
+                                                                        미제출
+                                                                    </span>
+                                                                    <ChevronIcon />
+                                                                </span>
+                                                            </Link>
+                                                        )
+                                                    )}
                                                 </div>
-                                            ))
+                                            </>
                                         )}
-                                    </div>
+                                    </>
                                 )}
-                            </div>
-                        </div>
-                    </div>
+                            </section>
 
-                    <div className={styles.bottomSection}>
-                        <div className={styles.section}>
-                            <div className={styles.sectionHeader}>
-                                <div className={styles.sectionTitle}>
-                                    최근 공지
-                                </div>
-                                <Link
-                                    to="/admin/notice"
-                                    className={styles.sectionAction}
+                            <section>
+                                <div
+                                    data-reveal
+                                    className={styles.sectionHeader}
                                 >
-                                    전체보기
-                                </Link>
-                            </div>
-
-                            {sectionErrors.notices ? (
-                                <p className={styles.tileMeta}>
-                                    {sectionErrors.notices}
-                                </p>
-                            ) : featuredNotice ? (
-                                <div className={styles.noticeLayout}>
+                                    <h2 className={styles.sectionTitle}>
+                                        최근 공지
+                                    </h2>
                                     <Link
-                                        to={`/admin/notice/${featuredNotice.id}`}
-                                        className={styles.noticeFeatured}
+                                        to="/admin/notice"
+                                        className={styles.sectionAction}
                                     >
-                                        {featuredNotice.important ===
-                                            "IMPORTANT" && (
-                                            <span
-                                                className={`${styles.tag} ${styles.tagMint}`}
-                                            >
-                                                중요
-                                            </span>
-                                        )}
-                                        <div
-                                            className={
-                                                styles.noticeFeaturedTitle
-                                            }
-                                        >
-                                            {featuredNotice.title}
-                                        </div>
-                                        {featuredNotice.content && (
-                                            <p
-                                                className={
-                                                    styles.noticeFeaturedExcerpt
-                                                }
-                                            >
-                                                {truncateText(
-                                                    stripMarkdown(
-                                                        featuredNotice.content
-                                                    ),
-                                                    80
-                                                )}
-                                            </p>
-                                        )}
-                                        <div
-                                            className={
-                                                styles.noticeFeaturedFoot
-                                            }
-                                        >
-                                            <span
-                                                className={
-                                                    styles.noticeFeaturedMeta
-                                                }
-                                            >
-                                                {featuredNotice.writer} ·{" "}
-                                                {formatCreatedAt(
-                                                    featuredNotice.createdAt
-                                                )}
-                                            </span>
-                                            <span
-                                                className={
-                                                    styles.noticeFeaturedLink
-                                                }
-                                            >
-                                                자세히 보기
-                                            </span>
-                                        </div>
+                                        전체보기
                                     </Link>
+                                </div>
 
-                                    <div className={styles.noticeListCompact}>
-                                        {restNotices.map((notice) => (
+                                {sectionErrors.notices ? (
+                                    <EmptyState
+                                        variant="error"
+                                        title="공지를 불러오지 못했어요"
+                                        description={sectionErrors.notices}
+                                    />
+                                ) : notices.length === 0 ? (
+                                    <EmptyState
+                                        title="아직 등록된 공지가 없어요"
+                                        description="작성한 공지가 여기에 최근 순으로 표시됩니다."
+                                    />
+                                ) : (
+                                    <div className={styles.rows}>
+                                        {notices.map((notice) => (
                                             <Link
                                                 key={notice.id}
+                                                data-reveal
                                                 to={`/admin/notice/${notice.id}`}
-                                                className={
-                                                    styles.noticeCompactRow
-                                                }
+                                                className={styles.noticeRow}
                                             >
                                                 {notice.important ===
                                                     "IMPORTANT" && (
                                                     <span
-                                                        className={`${styles.tag} ${styles.tagMint}`}
+                                                        className={styles.badge}
                                                     >
                                                         중요
                                                     </span>
                                                 )}
-                                                <div
+                                                <p
                                                     className={
-                                                        styles.plainRowTitle
+                                                        styles.noticeTitle
                                                     }
                                                 >
                                                     {notice.title}
-                                                </div>
-                                                <div
-                                                    className={
-                                                        styles.plainRowMeta
-                                                    }
+                                                </p>
+                                                <p
+                                                    className={styles.noticeMeta}
                                                 >
                                                     {notice.writer} ·{" "}
                                                     {formatCreatedAt(
                                                         notice.createdAt
                                                     )}
-                                                </div>
+                                                </p>
                                             </Link>
                                         ))}
                                     </div>
-                                </div>
-                            ) : (
-                                <p className={styles.tileMeta}>
-                                    등록된 공지가 없습니다.
-                                </p>
-                            )}
+                                )}
+
+                                {/* 팀 생성 전에는 채팅방 자체가 없다 */}
+                                {!isSetup && !sectionErrors.chat && (
+                                    <>
+                                        <h3
+                                            data-reveal
+                                            className={styles.subSectionTitle}
+                                        >
+                                            팀 채팅 최근 대화
+                                        </h3>
+                                        {recentMessages.length === 0 ? (
+                                            <p
+                                                data-reveal
+                                                className={styles.listLabel}
+                                            >
+                                                아직 대화가 없어요.
+                                            </p>
+                                        ) : (
+                                            <div className={styles.rows}>
+                                                {recentMessages.map(
+                                                    (message) => (
+                                                        <Link
+                                                            key={
+                                                                message.teamName +
+                                                                message.createdAt
+                                                            }
+                                                            data-reveal
+                                                            to="/admin/chat"
+                                                            className={
+                                                                styles.noticeRow
+                                                            }
+                                                        >
+                                                            <p
+                                                                className={
+                                                                    styles.chatTeam
+                                                                }
+                                                            >
+                                                                {
+                                                                    message.teamName
+                                                                }
+                                                            </p>
+                                                            <p
+                                                                className={
+                                                                    styles.chatPreview
+                                                                }
+                                                            >
+                                                                {
+                                                                    message.preview
+                                                                }{" "}
+                                                                ·{" "}
+                                                                {
+                                                                    message.timeText
+                                                                }
+                                                            </p>
+                                                        </Link>
+                                                    )
+                                                )}
+                                            </div>
+                                        )}
+                                    </>
+                                )}
+                            </section>
                         </div>
-                    </div>
-                </main>
-            )}
+                    </>
+                )}
+            </main>
 
             {teamRequiredModal && (
                 <TeamRequiredModal
