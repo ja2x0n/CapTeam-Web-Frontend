@@ -1,5 +1,5 @@
+import Skeleton from "../../common/skeleton/Skeleton";
 import styles from "./UserPlanForm.module.css";
-import useDelayedLoading from "../../../hooks/useDelayedLoading";
 
 const UserPlanForm = ({
     projectPlan,
@@ -13,29 +13,29 @@ const UserPlanForm = ({
     onFeatureChange,
     onRemoveFeature,
 }) => {
-    const showLoading = useDelayedLoading(isLoading);
+    if (isLoading) {
+        return (
+            <div className={styles.form}>
+                <Skeleton width={96} height={24} style={{ marginTop: 40 }} />
+                <Skeleton height={56} style={{ marginTop: 16 }} />
+                <Skeleton height={56} style={{ marginTop: 12 }} />
+                <Skeleton height={160} style={{ marginTop: 40 }} />
+            </div>
+        );
+    }
 
     return (
-        <form className={styles.formCard} onSubmit={onSubmit}>
-            {showLoading && (
-                <p className={styles.loadingText}>
-                    기획서를 불러오는 중입니다...
-                </p>
-            )}
-
+        <form className={styles.form} onSubmit={onSubmit}>
             {hasSavedPlan && (
                 <p className={styles.savedNote}>
-                    <strong>저장된 기획서가 있습니다</strong>
-                    <span>
-                        내용을 수정한 뒤 "수정 저장"을 누르면 최신 내용으로
-                        반영됩니다.
-                    </span>
+                    저장된 기획서가 있어요. 내용을 고치고 «수정 저장»을 누르면
+                    바로 반영돼요.
                 </p>
             )}
 
-            <div className={styles.formSectionHeader}>
-                <span>STEP 1</span>
-                <h2>기본 정보</h2>
+            <div className={styles.sectionHead}>
+                <span className={styles.sectionIndex}>01</span>
+                <h2 className={styles.sectionTitle}>기본 정보</h2>
             </div>
 
             <div className={styles.fieldGrid}>
@@ -64,9 +64,9 @@ const UserPlanForm = ({
                 </label>
             </div>
 
-            <div className={styles.formSectionHeader}>
-                <span>STEP 2</span>
-                <h2>서비스 내용</h2>
+            <div className={styles.sectionHead}>
+                <span className={styles.sectionIndex}>02</span>
+                <h2 className={styles.sectionTitle}>서비스 내용</h2>
             </div>
 
             <label className={styles.field}>
@@ -129,15 +129,23 @@ const UserPlanForm = ({
                 </small>
             </div>
 
-            {error && <p className={styles.errorMessage}>{error}</p>}
-
-            <button
-                type="submit"
-                className={styles.submitButton}
-                disabled={isLoading || isSubmitting}
-            >
-                {isSubmitting ? "저장 중..." : hasSavedPlan ? "수정 저장" : "저장"}
-            </button>
+            <div className={styles.actions}>
+                <p className={error ? styles.errorMessage : styles.actionHint}>
+                    {error ||
+                        "모든 항목을 채워야 저장할 수 있어요."}
+                </p>
+                <button
+                    type="submit"
+                    className={styles.submitButton}
+                    disabled={isSubmitting}
+                >
+                    {isSubmitting
+                        ? "저장 중..."
+                        : hasSavedPlan
+                          ? "수정 저장"
+                          : "저장"}
+                </button>
+            </div>
         </form>
     );
 };

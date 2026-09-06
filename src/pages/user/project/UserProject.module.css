@@ -1,25 +1,67 @@
 .page {
-    min-height: 100vh;
+    min-height: 100dvh;
+    background-color: var(--color-bg);
 }
 
 .body {
-    width: 100%;
-    max-width: 900px;
+    max-width: var(--max-width);
+    min-height: calc(100dvh - var(--header-height));
     margin: 0 auto;
-    padding: 40px clamp(20px, 3vw, 40px) 96px;
+    padding: 0 var(--page-padding) 112px;
+}
+
+.inner {
+    max-width: 1040px;
+    margin: 0 auto;
+}
+
+.backRow {
+    padding-top: 40px;
 }
 
 .backLink {
-    display: inline-flex;
-    color: var(--color-text-muted);
-    font-size: var(--font-size-sm);
+    font-size: 15px;
     font-weight: var(--font-weight-semibold);
+    color: var(--color-text-muted);
+    transition: color 0.15s ease;
 }
 
 .backLink:hover {
-    color: var(--color-primary-dark);
+    color: var(--color-text-primary);
 }
 
-.layout {
-    margin-top: 24px;
+.pageHead {
+    padding: 24px 0 8px;
+}
+
+.eyebrow {
+    font-size: 15px;
+    font-weight: var(--font-weight-semibold);
+    color: var(--color-primary-text);
+}
+
+.headline {
+    margin-top: 12px;
+    font-size: 40px;
+    font-weight: var(--font-weight-bold);
+    line-height: 1.25;
+    letter-spacing: -0.01em;
+}
+
+.subline {
+    max-width: 34rem;
+    margin-top: 16px;
+    font-size: 17px;
+    line-height: 1.6;
+    color: var(--color-text-secondary);
+}
+
+@media (max-width: 900px) {
+    .body {
+        padding: 0 20px 80px;
+    }
+
+    .headline {
+        font-size: 28px;
+    }
 }

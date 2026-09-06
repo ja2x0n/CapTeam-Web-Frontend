@@ -1,281 +1,181 @@
+/* Design/survey.html 반영. 설문 흐름에는 헤더가 없고, 진행률 바가 상단에 고정된다.
+   좌측 STEP 컬럼은 실제 문항 영역을 좁게 만들어서 빼고 단일 컬럼으로 간다. */
+
 .page {
-    min-height: 100vh;
-    background-color: #ffffff;
+    min-height: 100dvh;
+    background-color: var(--color-bg);
 }
 
 .body {
-    width: min(1240px, 100%);
+    max-width: var(--max-width);
     margin: 0 auto;
-    padding: 48px 24px 88px;
+    padding: 0 var(--page-padding) 112px;
 }
 
-.hero {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    gap: 48px;
-    padding: 52px 56px;
-    border: 1px solid var(--color-border);
-    border-radius: var(--border-radius-md);
-    background-color: #ffffff;
-}
-
-.eyebrow {
-    margin-bottom: 18px;
-    color: var(--color-primary-dark);
-    font-size: var(--font-size-md);
-    font-weight: var(--font-weight-bold);
-}
-
-.title {
-    max-width: 760px;
-    color: #000000;
-    font-size: 42px;
-    font-weight: var(--font-weight-bold);
-    line-height: 1.25;
-}
-
-.description {
-    max-width: 820px;
-    margin-top: 22px;
-    color: var(--color-text-secondary);
-    font-size: var(--font-size-lg);
-    font-weight: var(--font-weight-semibold);
-    line-height: 1.6;
-}
-
-.progressBox {
-    display: flex;
-    flex-direction: column;
-    justify-content: center;
-    flex-shrink: 0;
-    width: 180px;
-    min-height: 96px;
-    padding: 22px;
-    border-radius: var(--border-radius-md);
-    background-color: var(--color-primary-bg);
-}
-
-.progressBox strong {
-    color: var(--color-primary-dark);
-    font-size: var(--font-size-sm);
-    font-weight: var(--font-weight-bold);
-}
-
-.progressBox span {
-    margin-top: 8px;
-    color: #000000;
-    font-size: var(--font-size-2xl);
-    font-weight: var(--font-weight-bold);
-}
+/* ── 진행률 바 ───────────────────────────────────── */
 
 .surveyNav {
     position: sticky;
     top: 0;
-    z-index: 5;
-    display: grid;
-    grid-template-columns: minmax(180px, auto) minmax(180px, 1fr) auto;
+    z-index: 30;
+    padding: 20px 0 16px;
+    background-color: rgba(255, 255, 255, 0.95);
+    backdrop-filter: blur(8px);
+    border-bottom: 1px solid var(--color-border);
+}
+
+.navTop {
+    display: flex;
     align-items: center;
-    gap: 18px;
-    margin-top: 24px;
-    padding: 16px 22px;
-    border: 1px solid var(--color-border);
-    border-radius: var(--border-radius-md);
-    background-color: #ffffff;
-    box-shadow: var(--shadow-sm);
+    justify-content: space-between;
+    gap: 16px;
 }
 
 .progressSummary {
     display: flex;
-    flex-direction: column;
-    gap: 5px;
+    align-items: baseline;
+    gap: 12px;
+    min-width: 0;
 }
 
 .progressSummary strong {
-    color: #000000;
-    font-size: var(--font-size-md);
+    font-size: 19px;
     font-weight: var(--font-weight-bold);
 }
 
 .progressSummary span {
-    color: var(--color-text-secondary);
-    font-size: var(--font-size-sm);
-    font-weight: var(--font-weight-bold);
+    font-size: var(--font-size-md);
+    color: var(--color-text-muted);
+}
+
+.logoutButton {
+    flex-shrink: 0;
+    height: 36px;
+    padding: 0 12px;
+    border: none;
+    border-radius: 8px;
+    background: none;
+    font-family: var(--font-family);
+    font-size: var(--font-size-md);
+    font-weight: var(--font-weight-semibold);
+    color: var(--color-text-muted);
+    transition: background-color 0.15s ease, color 0.15s ease;
+}
+
+.logoutButton:hover {
+    background-color: var(--color-bg-secondary);
+    color: var(--color-text-primary);
 }
 
 .progressBar {
-    height: 10px;
-    overflow: hidden;
+    height: 8px;
+    margin-top: 12px;
     border-radius: 999px;
-    background-color: #edf1f4;
+    background-color: var(--color-bg-secondary);
+    overflow: hidden;
 }
 
 .progressBar span {
     display: block;
     height: 100%;
-    border-radius: inherit;
+    border-radius: 999px;
     background-color: var(--color-primary);
-    transition: width var(--transition);
+    transition: width 0.5s var(--ease-out);
 }
 
 .stepStatusList {
     display: flex;
     flex-wrap: wrap;
-    justify-content: flex-end;
-    gap: 8px;
+    gap: 16px;
+    margin-top: 12px;
+    font-size: var(--font-size-md);
+    font-weight: var(--font-weight-semibold);
+    color: var(--color-text-muted);
 }
 
-.stepStatusList span {
-    display: inline-flex;
-    align-items: center;
-    min-height: 30px;
-    padding: 0 10px;
-    border: 1px solid var(--color-border);
-    border-radius: 999px;
-    background-color: #ffffff;
-    color: var(--color-text-secondary);
-    font-size: var(--font-size-sm);
-    font-weight: var(--font-weight-bold);
+.completedStep {
+    color: var(--color-primary-text);
 }
 
-.stepStatusList .completedStep {
-    border-color: var(--color-primary);
-    background-color: var(--color-primary-bg);
-    color: var(--color-primary-dark);
-}
+/* ── 폼 ───────────────────────────────────────────── */
 
 .layout {
-    margin-top: 24px;
+    max-width: 960px;
+    margin: 0 auto;
 }
 
 .form {
     display: flex;
     flex-direction: column;
-    gap: 28px;
 }
 
 .card {
-    padding: 42px 56px;
-    border: 1px solid var(--color-border);
-    border-radius: var(--border-radius-md);
-    background-color: #ffffff;
-}
-
-.cardHeader {
-    padding-bottom: 26px;
+    padding: 56px 0;
     border-bottom: 1px solid var(--color-border);
 }
 
 .cardHeader span {
-    color: var(--color-primary-dark);
-    font-size: var(--font-size-md);
+    font-size: 15px;
     font-weight: var(--font-weight-bold);
+    color: var(--color-primary-text);
 }
 
 .cardHeader h2 {
-    margin-top: 12px;
-    color: #000000;
-    font-size: var(--font-size-3xl);
+    margin-top: 8px;
+    font-size: 30px;
     font-weight: var(--font-weight-bold);
+    letter-spacing: -0.01em;
 }
 
 .cardHeader p {
+    max-width: 36rem;
     margin-top: 12px;
+    font-size: 17px;
+    line-height: 1.6;
     color: var(--color-text-secondary);
-    font-size: var(--font-size-md);
-    font-weight: var(--font-weight-semibold);
-}
-
-.fieldGrid {
-    display: grid;
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-    gap: 24px;
-    margin-top: 28px;
-}
-
-.field {
-    display: flex;
-    flex-direction: column;
-    gap: 12px;
-}
-
-.field span,
-.fieldLabel {
-    color: #000000;
-    font-size: var(--font-size-md);
-    font-weight: var(--font-weight-bold);
-}
-
-.field select {
-    height: 54px;
-    padding: 0 16px;
-    border: 1px solid var(--color-border);
-    border-radius: var(--border-radius-sm);
-    background-color: #ffffff;
-    color: var(--color-text-primary);
-    font-family: var(--font-family);
-    font-size: var(--font-size-md);
-    font-weight: var(--font-weight-semibold);
 }
 
 .formSection {
-    padding: 30px 0;
-    border-bottom: 1px solid var(--color-border);
-}
-
-.formSection:last-child {
-    padding-bottom: 0;
-    border-bottom: 0;
-}
-
-.sectionTitleArea {
-    margin-bottom: 18px;
+    margin-top: 40px;
 }
 
 .sectionTitleArea h3 {
-    color: #000000;
-    font-size: var(--font-size-xl);
+    font-size: 19px;
     font-weight: var(--font-weight-bold);
 }
 
 .sectionTitleArea p {
-    margin-top: 8px;
-    color: var(--color-text-secondary);
-    font-size: var(--font-size-md);
-    font-weight: var(--font-weight-semibold);
+    margin-top: 6px;
+    font-size: 15px;
     line-height: 1.6;
+    color: var(--color-text-secondary);
 }
+
+/* ── 선택 버튼 ───────────────────────────────────── */
 
 .roleList {
     display: flex;
     flex-wrap: wrap;
-    gap: 10px;
-}
-
-.optionButton,
-.binaryButton {
-    min-height: 46px;
-    border: 1px solid var(--color-border);
-    border-radius: var(--border-radius-sm);
-    background-color: #ffffff;
-    color: var(--color-text-secondary);
-    font-family: var(--font-family);
-    font-size: var(--font-size-md);
-    font-weight: var(--font-weight-bold);
-    transition: border-color var(--transition),
-        background-color var(--transition), color var(--transition);
-}
-
-.optionButton:hover,
-.binaryButton:hover {
-    border-color: var(--color-primary);
-    background-color: var(--color-primary);
-    color: #ffffff;
+    gap: 8px;
+    margin-top: 16px;
 }
 
 .optionButton {
-    min-width: 100px;
-    padding: 0 10px;
+    height: 44px;
+    padding: 0 18px;
+    border: 1px solid var(--color-border);
+    border-radius: 999px;
+    background: none;
+    font-family: var(--font-family);
+    font-size: 15px;
+    font-weight: var(--font-weight-semibold);
+    color: var(--color-text-secondary);
+    transition: border-color 0.15s ease, background-color 0.15s ease,
+        color 0.15s ease;
+}
+
+.optionButton:hover {
+    border-color: var(--color-primary);
 }
 
 .selectedOption {
@@ -284,99 +184,70 @@
     color: #ffffff;
 }
 
-.selectedOption:hover {
-    color: #ffffff;
-}
-
-.addRow {
-    display: grid;
-    grid-template-columns: minmax(0, 1fr) 96px;
-    gap: 10px;
+.binaryGroup {
+    display: flex;
+    gap: 8px;
     margin-top: 16px;
 }
 
-.addRow input,
-.memberRow input,
-.dynamicItem textarea,
-.stackTextarea {
-    width: 100%;
-    border: 1px solid var(--color-border);
-    border-radius: var(--border-radius-sm);
-    background-color: #ffffff;
-    color: var(--color-text-primary);
-    font-family: var(--font-family);
-    font-size: var(--font-size-md);
-    font-weight: var(--font-weight-semibold);
-    resize: none;
-}
-
-.stackTextarea {
-    min-height: 92px;
-    padding: 16px;
-    line-height: 1.6;
-}
-
-.addRow input,
-.memberRow input {
+.binaryButton {
     height: 48px;
-    padding: 0 14px;
-}
-
-.addRow button,
-.addButton,
-.memberRow button,
-.dynamicItem button {
-    border: 1px solid var(--color-primary);
-    border-radius: var(--border-radius-sm);
-    background-color: #ffffff;
-    color: var(--color-primary-dark);
+    padding: 0 28px;
+    border: 1px solid var(--color-border);
+    border-radius: 8px;
+    background: none;
     font-family: var(--font-family);
-    font-size: var(--font-size-md);
-    font-weight: var(--font-weight-bold);
-    transition: background-color var(--transition),
-        border-color var(--transition), color var(--transition);
+    font-size: var(--font-size-lg);
+    font-weight: var(--font-weight-semibold);
+    color: var(--color-text-secondary);
+    transition: border-color 0.15s ease, background-color 0.15s ease,
+        color 0.15s ease;
 }
 
-.addRow button:hover,
-.addButton:hover,
-.memberRow button:hover,
-.dynamicItem button:hover {
-    border-color: var(--color-primary-dark);
-    background-color: var(--color-primary-dark);
+.binaryButton:hover {
+    border-color: var(--color-primary);
+}
+
+.binaryButton.selectedOption {
+    border-color: var(--color-primary);
+    background-color: var(--color-primary);
     color: #ffffff;
 }
 
-.addButton {
-    min-height: 46px;
-    margin-top: 14px;
-    padding: 0 18px;
+/* ── 입력 ─────────────────────────────────────────── */
+
+.stackTextarea {
+    width: 100%;
+    min-height: 108px;
+    margin-top: 16px;
+    padding: 16px;
+    border: 1px solid var(--color-border);
+    border-radius: 12px;
+    font-family: var(--font-family);
+    font-size: var(--font-size-lg);
+    line-height: 1.7;
+    transition: border-color 0.15s ease;
 }
 
-.addButton:disabled {
-    border-color: var(--color-border);
+.stackTextarea::placeholder {
     color: var(--color-text-muted);
-    cursor: not-allowed;
 }
 
-.addButton:disabled:hover {
-    background-color: #ffffff;
+.stackTextarea:focus {
+    border-color: var(--color-primary);
 }
 
-.dynamicList,
-.memberList {
+.dynamicList {
     display: flex;
     flex-direction: column;
-    gap: 12px;
+    gap: 16px;
+    margin-top: 16px;
 }
 
 .dynamicItem {
-    display: flex;
-    flex-direction: column;
-    gap: 10px;
     padding: 16px;
     border: 1px solid var(--color-border);
-    border-radius: var(--border-radius-sm);
-    background-color: #ffffff;
+    border-radius: 12px;
 }
 
 .itemHeader {
@@ -387,260 +258,134 @@
 }
 
 .itemHeader strong {
-    color: var(--color-text-primary);
-    font-size: var(--font-size-md);
+    font-size: 15px;
     font-weight: var(--font-weight-bold);
-}
-
-.dynamicItem textarea {
-    min-height: 92px;
-    padding: 14px;
-    line-height: 1.6;
-}
-
-.dynamicItem button,
-.memberRow button {
-    min-width: 86px;
-    padding: 0 14px;
 }
 
 .itemHeader button {
-    min-height: 34px;
-}
-
-.memberRow {
-    display: grid;
-    grid-template-columns: minmax(0, 1fr) auto;
-    gap: 10px;
-}
-
-.binaryGroup {
-    display: grid;
-    grid-template-columns: repeat(2, 120px);
-    gap: 12px;
-}
-
-.binaryButton {
-    border-radius: var(--border-radius-sm);
-}
-
-.questionList {
-    display: flex;
-    flex-direction: column;
-    margin: 0;
-    padding: 0;
-    list-style: none;
-}
-
-.submitArea {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    gap: 24px;
-    min-width: 0;
-    padding: 26px 32px;
-    border: 1px solid var(--color-border);
-    border-radius: var(--border-radius-md);
-    background-color: #ffffff;
-}
-
-.submitArea p {
-    flex: 1;
-    min-width: 0;
-    margin: 0;
-    color: var(--color-text-secondary);
+    border: none;
+    background: none;
+    font-family: var(--font-family);
     font-size: var(--font-size-md);
     font-weight: var(--font-weight-semibold);
-    line-height: 1.55;
-    overflow-wrap: anywhere;
-    word-break: keep-all;
+    color: var(--color-text-muted);
+    transition: color 0.15s ease;
 }
 
-.submitArea .errorText {
+.itemHeader button:hover {
     color: var(--color-danger);
 }
 
-.submittingArea {
-    align-items: center;
-    background-color: #f8fbf9;
+.dynamicItem textarea {
+    width: 100%;
+    min-height: 88px;
+    margin-top: 12px;
+    padding: 12px;
+    border: 1px solid var(--color-border);
+    border-radius: 10px;
+    font-family: var(--font-family);
+    font-size: var(--font-size-lg);
+    line-height: 1.7;
+    transition: border-color 0.15s ease;
 }
 
-.analysisStatus {
-    flex: 1;
-    min-width: 0;
+.dynamicItem textarea:focus {
+    border-color: var(--color-primary);
 }
 
-.analysisHeader {
+.addButton {
+    height: 44px;
+    margin-top: 12px;
+    padding: 0 18px;
+    border: 1px dashed var(--color-border);
+    border-radius: 8px;
+    background: none;
+    font-family: var(--font-family);
+    font-size: 15px;
+    font-weight: var(--font-weight-semibold);
+    color: var(--color-text-secondary);
+    transition: border-color 0.15s ease, color 0.15s ease;
+}
+
+.addButton:hover {
+    border-color: var(--color-primary);
+    color: var(--color-primary-text);
+}
+
+/* ── 선호 팀원 ───────────────────────────────────── */
+
+.preferredSearchArea {
+    position: relative;
+    max-width: 26rem;
+    margin-top: 16px;
+}
+
+.preferredSearchInput {
+    width: 100%;
+    height: 48px;
+    padding: 0 16px;
+    border: 1px solid var(--color-border);
+    border-radius: 10px;
+    font-size: var(--font-size-lg);
+    transition: border-color 0.15s ease;
+}
+
+.preferredSearchInput::placeholder {
+    color: var(--color-text-muted);
+}
+
+.preferredSearchInput:focus {
+    border-color: var(--color-primary);
+}
+
+/* 검색 결과 — ul 기본 불릿과 들여쓰기를 반드시 지운다 */
+.preferredResultList {
+    margin: 8px 0 0;
+    padding: 4px;
+    border: 1px solid var(--color-border);
+    border-radius: 10px;
+    list-style: none;
+}
+
+.preferredResultList li {
+    list-style: none;
+}
+
+.preferredResultList button {
     display: flex;
     align-items: center;
     justify-content: space-between;
-    gap: 16px;
-}
-
-.analysisHeader strong {
-    color: #000000;
-    font-size: var(--font-size-lg);
-    font-weight: var(--font-weight-bold);
-    line-height: 1.35;
-}
-
-.analysisHeader p {
-    flex: initial;
-    max-width: 520px;
-    color: var(--color-text-secondary);
-    font-size: var(--font-size-sm);
-    font-weight: var(--font-weight-semibold);
-    line-height: 1.5;
-    text-align: right;
-}
-
-.analysisProgress {
-    position: relative;
-    height: 8px;
-    margin-top: 14px;
-    overflow: hidden;
-    border-radius: 4px;
-    background-color: #e8f0ec;
-}
-
-.analysisProgress span {
-    position: absolute;
-    top: 0;
-    left: -38%;
-    width: 38%;
-    height: 100%;
-    border-radius: inherit;
-    background-color: var(--color-primary);
-    animation: analysisProgress 1.4s ease-in-out infinite;
-}
-
-.submitArea button {
-    flex-shrink: 0;
-    height: 48px;
-    padding: 0 30px;
-    border: 1px solid var(--color-primary);
-    border-radius: var(--border-radius-sm);
-    background-color: var(--color-primary);
-    color: #ffffff;
+    gap: 12px;
+    width: 100%;
+    padding: 10px 12px;
+    border: none;
+    border-radius: 8px;
+    background: none;
     font-family: var(--font-family);
+    text-align: left;
+    color: inherit;
+    transition: background-color 0.15s ease;
+}
+
+.preferredResultList button:hover {
+    background-color: var(--color-bg-secondary);
+}
+
+.preferredResultList button strong {
+    font-size: var(--font-size-lg);
+    font-weight: var(--font-weight-semibold);
+}
+
+.preferredResultList button span {
+    flex-shrink: 0;
     font-size: var(--font-size-md);
-    font-weight: var(--font-weight-bold);
-    transition: background-color var(--transition),
-        border-color var(--transition);
+    color: var(--color-text-muted);
 }
 
-.submitArea button:hover {
-    border-color: var(--color-primary-dark);
-    background-color: var(--color-primary-dark);
-}
-
-.submitArea button:disabled {
-    cursor: not-allowed;
-    border-color: var(--color-primary);
-    background-color: var(--color-primary);
-    opacity: 0.65;
-}
-
-@keyframes analysisProgress {
-    0% {
-        left: -38%;
-    }
-
-    55% {
-        left: 50%;
-    }
-
-    100% {
-        left: 100%;
-    }
-}
-
-@media (max-width: 960px) {
-    .hero,
-    .submitArea {
-        align-items: flex-start;
-        flex-direction: column;
-    }
-
-    .surveyNav {
-        align-items: flex-start;
-        grid-template-columns: 1fr;
-        gap: 10px;
-    }
-
-    .submitArea button {
-        width: 100%;
-    }
-
-    .analysisStatus {
-        width: 100%;
-    }
-
-    .progressBar {
-        width: 100%;
-    }
-
-    .stepStatusList {
-        justify-content: flex-start;
-    }
-
-    .roleList {
-        gap: 8px;
-    }
-
-    .optionButton {
-        min-width: calc(50% - 4px);
-    }
-}
-
-@media (max-width: 768px) {
-    .body {
-        padding: 32px 16px 56px;
-    }
-
-    .hero,
-    .card,
-    .submitArea {
-        padding: 24px;
-    }
-
-    .title {
-        font-size: var(--font-size-3xl);
-    }
-
-    .fieldGrid {
-        grid-template-columns: 1fr;
-    }
-
-    .addRow,
-    .memberRow {
-        grid-template-columns: 1fr;
-    }
-
-    .optionButton {
-        width: 100%;
-        min-width: 0;
-    }
-
-    .dynamicItem button,
-    .memberRow button {
-        min-height: 42px;
-    }
-
-    .binaryGroup {
-        grid-template-columns: repeat(2, minmax(0, 1fr));
-    }
-
-    .analysisHeader {
-        align-items: flex-start;
-        flex-direction: column;
-        gap: 6px;
-    }
-
-    .analysisHeader p {
-        max-width: none;
-        text-align: left;
-    }
+.preferredResultEmpty {
+    padding: 12px;
+    font-size: 15px;
+    color: var(--color-text-muted);
 }
 
 .preferredChipList {
@@ -653,120 +398,199 @@
 .preferredChip {
     display: inline-flex;
     align-items: center;
-    gap: 8px;
-    height: 36px;
-    padding: 0 8px 0 14px;
-    border: 1px solid var(--color-primary);
+    gap: 4px;
+    padding: 6px 8px 6px 14px;
     border-radius: 999px;
-    color: var(--color-primary-dark);
-    font-size: var(--font-size-sm);
-    font-weight: var(--font-weight-bold);
+    background-color: var(--color-primary-bg);
+    font-size: var(--font-size-md);
+    font-weight: var(--font-weight-semibold);
+    color: var(--color-primary-text);
 }
 
 .preferredChip button {
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
+    display: grid;
+    place-items: center;
     width: 20px;
     height: 20px;
     border: none;
     border-radius: 50%;
     background: none;
-    color: var(--color-primary-dark);
-    font-size: var(--font-size-md);
+    font-family: var(--font-family);
+    font-size: 15px;
     line-height: 1;
-    cursor: pointer;
+    color: var(--color-primary-text);
+    transition: background-color 0.15s ease;
 }
 
 .preferredChip button:hover {
-    background-color: var(--color-primary-bg);
+    background-color: #dcefe4;
 }
 
-.preferredSearchArea {
-    position: relative;
-    margin-top: 16px;
-}
+/* ── 문항 ─────────────────────────────────────────── */
 
-.preferredSearchInput {
-    width: 100%;
-    height: 48px;
-    padding: 0 14px;
-    border: 1px solid var(--color-border);
-    border-radius: var(--border-radius-sm);
-    background-color: #ffffff;
-    color: var(--color-text-primary);
-    font-family: var(--font-family);
-    font-size: var(--font-size-md);
-    font-weight: var(--font-weight-semibold);
-    transition: border-color var(--transition);
-}
-
-.preferredSearchInput:hover {
-    border-color: var(--color-text-muted);
-}
-
-.preferredSearchInput:focus {
-    border-color: var(--color-primary);
-    outline: none;
-}
-
-.preferredResultList {
-    position: absolute;
-    left: 0;
-    right: 0;
-    top: calc(100% + 6px);
-    z-index: 10;
-    max-height: 220px;
-    overflow-y: auto;
-    margin: 0;
-    padding: 0;
+.questionList {
+    margin-top: 24px;
     list-style: none;
-    border: 1px solid var(--color-border);
-    border-radius: var(--border-radius-sm);
-    background-color: #ffffff;
-    box-shadow: 0 8px 24px rgba(20, 24, 28, 0.08);
 }
 
-.preferredResultList li button {
+/* ── 제출 ─────────────────────────────────────────── */
+
+.errorText {
+    margin-top: 24px;
+    font-size: 15px;
+    font-weight: var(--font-weight-semibold);
+    color: var(--color-danger);
+}
+
+.submitArea {
     display: flex;
-    align-items: baseline;
-    justify-content: space-between;
-    gap: 8px;
-    width: 100%;
-    padding: 12px 16px;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: flex-end;
+    gap: 16px;
+    padding: 48px 0;
+}
+
+.submitArea p {
+    flex: 1;
+    min-width: 240px;
+    font-size: 15px;
+    color: var(--color-text-secondary);
+}
+
+.submitArea button {
+    height: 56px;
+    padding: 0 36px;
     border: none;
-    border-bottom: 1px solid var(--color-border);
-    background: none;
-    text-align: left;
+    border-radius: 8px;
+    background-color: var(--color-primary);
     font-family: var(--font-family);
-    cursor: pointer;
-    transition: background-color var(--transition);
+    font-size: 17px;
+    font-weight: var(--font-weight-semibold);
+    color: #ffffff;
+    transition: background-color 0.15s ease, transform 0.1s ease;
 }
 
-.preferredResultList li:last-child button {
-    border-bottom: none;
+.submitArea button:hover:not(:disabled) {
+    background-color: var(--color-primary-dark);
 }
 
-.preferredResultList li button:hover {
-    background-color: var(--color-bg-secondary);
+.submitArea button:active:not(:disabled) {
+    transform: scale(0.98);
 }
 
-.preferredResultList strong {
-    font-size: var(--font-size-md);
+.submitArea button:disabled {
+    background-color: var(--color-border);
+    color: var(--color-text-muted);
+    cursor: not-allowed;
+}
+
+/* ── 분석 중 (설문 제출 후 전용 화면) ───────────── */
+
+.analysisPage {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 100dvh;
+    padding: 40px var(--page-padding);
+}
+
+.analysisBox {
+    width: 100%;
+    max-width: 520px;
+    text-align: center;
+}
+
+.analysisEyebrow {
+    font-size: 15px;
+    font-weight: var(--font-weight-semibold);
+    color: var(--color-primary-text);
+}
+
+.analysisTitle {
+    margin-top: 12px;
+    font-size: 32px;
     font-weight: var(--font-weight-bold);
-    color: var(--color-text-primary);
+    line-height: 1.3;
+    letter-spacing: -0.01em;
 }
 
-.preferredResultList span {
-    flex-shrink: 0;
-    font-size: var(--font-size-xs);
-    font-weight: var(--font-weight-semibold);
+.analysisDesc {
+    margin-top: 16px;
+    font-size: 17px;
+    line-height: 1.6;
+    color: var(--color-text-secondary);
+}
+
+/* 남은 시간을 알 수 없으니 값이 아니라 흐름만 보여준다 */
+.analysisFlow {
+    position: relative;
+    height: 6px;
+    margin-top: 32px;
+    border-radius: 999px;
+    background-color: var(--color-bg-secondary);
+    overflow: hidden;
+}
+
+.analysisFlow::after {
+    content: "";
+    position: absolute;
+    inset: 0 auto 0 0;
+    width: 40%;
+    border-radius: 999px;
+    background-color: var(--color-primary);
+    animation: surveyFlow 1.6s var(--ease-out) infinite;
+}
+
+@keyframes surveyFlow {
+    0% {
+        transform: translateX(-100%);
+    }
+    100% {
+        transform: translateX(250%);
+    }
+}
+
+.analysisNote {
+    margin-top: 20px;
+    font-size: var(--font-size-md);
     color: var(--color-text-muted);
 }
 
-.preferredResultEmpty {
-    padding: 12px 16px;
-    font-size: var(--font-size-sm);
-    font-weight: var(--font-weight-semibold);
-    color: var(--color-text-muted);
+@media (prefers-reduced-motion: reduce) {
+    .analysisFlow::after {
+        animation: none;
+        width: 100%;
+        opacity: 0.4;
+    }
+}
+
+/* ── 반응형 ───────────────────────────────────────── */
+
+@media (max-width: 900px) {
+    .body {
+        padding: 0 20px 80px;
+    }
+
+    .progressSummary {
+        flex-direction: column;
+        gap: 2px;
+    }
+
+    .progressSummary strong {
+        font-size: var(--font-size-lg);
+    }
+
+    .card {
+        padding: 40px 0;
+    }
+
+    .cardHeader h2 {
+        font-size: 24px;
+    }
+
+    .submitArea button {
+        width: 100%;
+        padding: 0 24px;
+    }
 }

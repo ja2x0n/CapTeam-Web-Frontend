@@ -104,11 +104,31 @@ const UserProject = () => {
             <Header />
 
             <main className={styles.body}>
-                <Link to="/user/dashboard" className={styles.backLink}>
-                    ← 처음으로
-                </Link>
+                <div className={styles.inner}>
+                    <div className={styles.backRow}>
+                        <Link
+                            to="/user/dashboard"
+                            className={styles.backLink}
+                        >
+                            ← 홈으로
+                        </Link>
+                    </div>
 
-                <section className={styles.layout}>
+                    <section className={styles.pageHead}>
+                        <p className={styles.eyebrow}>프로젝트 기획서</p>
+                        <h1 className={styles.headline}>
+                            우리 팀이 만들 서비스를
+                            <br />
+                            정리해주세요
+                        </h1>
+                        <p className={styles.subline}>
+                            여기에 적은 내용은 팀 관리 화면에서 담당 교사가 함께
+                            봅니다.
+                            <br />
+                            언제든 다시 수정할 수 있어요.
+                        </p>
+                    </section>
+
                     <UserPlanForm
                         projectPlan={projectPlan}
                         hasSavedPlan={hasSavedPlan}
@@ -121,7 +141,7 @@ const UserProject = () => {
                         onFeatureChange={updateCoreFeature}
                         onRemoveFeature={removeCoreFeature}
                     />
-                </section>
+                </div>
             </main>
         </div>
     );

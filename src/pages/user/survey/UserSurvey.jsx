@@ -4,6 +4,7 @@ import { requestSubmitSurvey } from "../../../api/surveyApi";
 import { requestStudentSearch } from "../../../api/studentApi";
 import { gradeLabels, roleLabels } from "../../../constants/team";
 import authStore from "../../../store/authStore";
+import { requestLogout } from "../../../api/authApi";
 import { getApiErrorMessage } from "../../../utils/apiError";
 import styles from "./UserSurvey.module.css";
 import {
@@ -89,6 +90,16 @@ const UserSurvey = () => {
     const user = authStore((state) => state.user);
     const accessToken = authStore((state) => state.accessToken);
     const saveLogin = authStore((state) => state.saveLogin);
+    const logout = authStore((state) => state.logout);
+
+    const handleLogout = async () => {
+        try {
+            await requestLogout();
+        } finally {
+            logout();
+            navigate("/login", { replace: true });
+        }
+    };
     const roleSectionRef = useRef(null);
     const stackSectionRef = useRef(null);
     const experienceSectionRef = useRef(null);
@@ -476,16 +487,50 @@ const UserSurvey = () => {
         }
     };
 
+    // 분석 중에는 긴 폼을 그대로 두면 안내가 화면 맨 아래에 묻힌다.
+    // 분석 화면만 남기고 화면 가운데에 보여준다.
+    if (isSubmitting) {
+        return (
+            <div className={styles.page}>
+                <main className={styles.analysisPage}>
+                    <div className={styles.analysisBox} aria-live="polite">
+                        <p className={styles.analysisEyebrow}>설문 분석 중</p>
+                        <h1 className={styles.analysisTitle}>
+                            설문을 분석하고 있어요
+                        </h1>
+                        <p className={styles.analysisDesc}>
+                            캡스톤 역량과 성향을 정리해
+                            <br />팀 추천 데이터를 준비하는 중이에요.
+                        </p>
+                        <div className={styles.analysisFlow} aria-hidden="true" />
+                        <p className={styles.analysisNote}>
+                            창을 닫지 말고 잠시만 기다려주세요.
+                        </p>
+                    </div>
+                </main>
+            </div>
+        );
+    }
+
     return (
         <div className={styles.page}>
             <main className={styles.body}>
                 <section className={styles.surveyNav}>
-                    <div className={styles.progressSummary}>
-                        <strong>설문 진행률 {progressPercent}%</strong>
-                        <span>
-                            필수 항목 {completedRequiredCount}/
-                            {totalRequiredCount}개 완료
-                        </span>
+                    <div className={styles.navTop}>
+                        <div className={styles.progressSummary}>
+                            <strong>설문 진행률 {progressPercent}%</strong>
+                            <span>
+                                필수 항목 {completedRequiredCount}/
+                                {totalRequiredCount}개 완료
+                            </span>
+                        </div>
+                        <button
+                            type="button"
+                            className={styles.logoutButton}
+                            onClick={handleLogout}
+                        >
+                            로그아웃
+                        </button>
                     </div>
                     <div
                         className={styles.progressBar}
@@ -866,41 +911,15 @@ const UserSurvey = () => {
 
                         <div
                             ref={submitAreaRef}
-                            className={`${styles.submitArea} ${
-                                isSubmitting ? styles.submittingArea : ""
-                            }`}
+                            className={styles.submitArea}
                         >
-                            {isSubmitting ? (
-                                <div
-                                    className={styles.analysisStatus}
-                                    aria-live="polite"
-                                >
-                                    <div className={styles.analysisHeader}>
-                                        <strong>설문을 분석하고 있어요</strong>
-                                        <p>
-                                            캡스톤 역량과 성향을 정리해 팀 추천
-                                            데이터를 준비하는 중이에요.
-                                        </p>
-                                    </div>
-
-                                    <div
-                                        className={styles.analysisProgress}
-                                        aria-hidden="true"
-                                    >
-                                        <span />
-                                    </div>
-                                </div>
-                            ) : (
-                                <p className={error ? styles.errorText : ""}>
-                                    {error ||
-                                        (isSurveyReady
-                                            ? "필수 항목이 모두 입력되었습니다. 제출 전 내용을 한 번만 확인해주세요."
-                                            : "제출 후에는 마이페이지에서 일부 정보를 수정할 수 있습니다.")}
-                                </p>
-                            )}
-                            <button type="submit" disabled={isSubmitting}>
-                                {isSubmitting ? "분석 중입니다" : "설문 제출"}
-                            </button>
+                            <p className={error ? styles.errorText : ""}>
+                                {error ||
+                                    (isSurveyReady
+                                        ? "필수 항목이 모두 입력되었습니다. 제출 전 내용을 한 번만 확인해주세요."
+                                        : "제출 후에는 마이페이지에서 일부 정보를 수정할 수 있습니다.")}
+                            </p>
+                            <button type="submit">설문 제출</button>
                         </div>
                     </form>
                 </section>
