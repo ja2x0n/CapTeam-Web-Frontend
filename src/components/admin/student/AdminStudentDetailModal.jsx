@@ -2,6 +2,8 @@ import { useNavigate } from "react-router-dom";
 import { levelLabels, roleLabels } from "../../../constants/student";
 import { getStudentNumberInfo } from "../../../utils/student";
 import ModalOverlay from "../../common/modal/ModalOverlay";
+import { useModalClose } from "../../common/modal/modalCloseContext";
+import useInView from "../../../hooks/useInView";
 import styles from "./AdminStudentDetailModal.module.css";
 import {
     PolarAngleAxis,
@@ -97,7 +99,7 @@ const SurveyReliabilityCard = ({ student }) => {
         inconsistentCount !== undefined;
 
     return (
-        <article className={styles.reliabilityCard}>
+        <article data-reveal className={styles.reliabilityCard}>
             <div className={styles.reliabilityHeader}>
                 <h3>응답 신뢰도</h3>
                 {hasReliabilityData && (
@@ -136,7 +138,7 @@ const StudentRadarChart = ({ title, data }) => {
     );
 
     return (
-        <article className={styles.chartCard}>
+        <article data-reveal className={styles.chartCard}>
             <h3>{title}</h3>
 
             {hasData ? (
@@ -147,9 +149,9 @@ const StudentRadarChart = ({ title, data }) => {
                             <PolarAngleAxis
                                 dataKey="label"
                                 tick={{
-                                    fill: "#111827",
-                                    fontSize: 12,
-                                    fontWeight: 700,
+                                    fill: "#4e5968",
+                                    fontSize: 13,
+                                    fontWeight: 600,
                                 }}
                             />
                             <PolarRadiusAxis
@@ -160,9 +162,10 @@ const StudentRadarChart = ({ title, data }) => {
                             />
                             <Radar
                                 dataKey="score"
-                                stroke="#5fc89b"
-                                fill="#5fc89b"
-                                fillOpacity={0.28}
+                                stroke="#60c49b"
+                                fill="#60c49b"
+                                fillOpacity={0.14}
+                                strokeWidth={2}
                                 dot={false}
                             />
                         </RadarChart>
@@ -177,6 +180,21 @@ const StudentRadarChart = ({ title, data }) => {
     );
 };
 
+const CloseButton = () => {
+    const close = useModalClose();
+
+    return (
+        <button
+            type="button"
+            className={styles.closeButton}
+            aria-label="학생 상세 모달 닫기"
+            onClick={close}
+        >
+            ×
+        </button>
+    );
+};
+
 const AdminStudentDetailModal = ({
     student,
     students = [],
@@ -185,6 +203,7 @@ const AdminStudentDetailModal = ({
     onClose,
 }) => {
     const navigate = useNavigate();
+    const contentRef = useInView({ replayKey: student.userId });
 
     const developmentChartData = getDevelopmentChartData(student);
     const personalityChartData = getPersonalityChartData(student);
@@ -227,43 +246,49 @@ const AdminStudentDetailModal = ({
         >
                 <header className={styles.modalHeader}>
                     <div className={styles.meta}>
-                        <p>{numberInfo.number}</p>
-                        <h2 id="student-modal-title">{student.name}</h2>
-                        <span
-                            className={
-                                analysisDisplay.isFailed
-                                    ? styles.levelBadgeFailed
-                                    : undefined
-                            }
-                        >
-                            {analysisDisplay.levelText}
-                        </span>
+                        <div className={styles.titleRow}>
+                            <h2 id="student-modal-title">{student.name}</h2>
+                            <span
+                                className={
+                                    !student.surveyCompleted ||
+                                    analysisDisplay.isFailed
+                                        ? styles.levelBadgeFailed
+                                        : styles.levelBadge
+                                }
+                            >
+                                {student.surveyCompleted
+                                    ? analysisDisplay.levelText
+                                    : "설문 미제출"}
+                            </span>
+                        </div>
+                        <p className={styles.metaLine}>
+                            {numberInfo.classText} · {student.userId}
+                        </p>
                     </div>
 
-                    <button
-                        type="button"
-                        className={styles.closeButton}
-                        aria-label="학생 상세 모달 닫기"
-                        onClick={onClose}
-                    >
-                        X
-                    </button>
+                    <CloseButton />
                 </header>
 
                 {modalError && <p className={styles.errorText}>{modalError}</p>}
 
                 {!student.surveyCompleted ? (
                     <div className={styles.emptySurveyMessage}>
-                        <strong>설문이 미완료입니다</strong>
+                        <strong>아직 설문을 제출하지 않았어요</strong>
                         <p>
-                            학생이 설문을 제출하면 기술 스택과 구현 경험을
-                            확인할 수 있습니다.
+                            설문을 제출하면 기술 스택, 실행·협업 성향 점수, AI
+                            분석 결과를 여기에서 확인할 수 있어요.
+                            <br />
+                            현재는 학년·반 정보만 조회할 수 있어요.
                         </p>
+                        <div className={styles.pendingClassRow}>
+                            <span>학년/반/번호</span>
+                            <strong>{numberInfo.classText}</strong>
+                        </div>
                     </div>
                 ) : (
-                    <div className={styles.modalContent}>
+                    <div className={styles.modalContent} ref={contentRef}>
                         <div className={styles.infoColumn}>
-                            <section className={styles.profileStrip}>
+                            <section data-reveal className={styles.profileStrip}>
                                 <div>
                                     <span>학년/반/번호</span>
                                     <strong>{numberInfo.classText}</strong>
@@ -311,16 +336,27 @@ const AdminStudentDetailModal = ({
                                 </div>
                             </section>
 
-                            <section className={styles.trackSection}>
+                            <section data-reveal className={styles.trackSection}>
                                 <div className={styles.sectionHeader}>
                                     <h3>기술 스택 · 구현 경험</h3>
                                 </div>
 
-                                <p className={styles.stackList}>
-                                    {(student.skill || []).length > 0
-                                        ? student.skill.join(" · ")
-                                        : "기술 스택 없음"}
-                                </p>
+                                <div className={styles.chipRow}>
+                                    {(student.skill || []).length > 0 ? (
+                                        student.skill.map((skill) => (
+                                            <span
+                                                key={skill}
+                                                className={styles.chip}
+                                            >
+                                                {skill}
+                                            </span>
+                                        ))
+                                    ) : (
+                                        <span className={styles.emptyInlineText}>
+                                            기술 스택 없음
+                                        </span>
+                                    )}
+                                </div>
 
                                 <ul className={styles.timelineList}>
                                     {(student.experience || []).length > 0 ? (
@@ -335,7 +371,7 @@ const AdminStudentDetailModal = ({
                                 </ul>
                             </section>
 
-                            <section className={styles.compactSection}>
+                            <section data-reveal className={styles.compactSection}>
                                 <h3>팀원 명단</h3>
 
                                 {isAssignedTeam ? (
@@ -391,25 +427,34 @@ const AdminStudentDetailModal = ({
                                 )}
                             </section>
 
-                            <section className={styles.compactSection}>
+                            <section data-reveal className={styles.compactSection}>
                                 <h3>선호 팀원</h3>
 
-                                <p className={styles.stackList}>
-                                    {(student.preferredTeammates || [])
-                                        .length > 0
-                                        ? student.preferredTeammates
-                                              .map((member) =>
-                                                  formatPreferredMember(
-                                                      member,
-                                                      students
-                                                  )
-                                              )
-                                              .join(" · ")
-                                        : "없음"}
-                                </p>
+                                <div className={styles.chipRow}>
+                                    {(student.preferredTeammates || []).length >
+                                    0 ? (
+                                        student.preferredTeammates.map(
+                                            (member) => (
+                                                <span
+                                                    key={member}
+                                                    className={styles.chip}
+                                                >
+                                                    {formatPreferredMember(
+                                                        member,
+                                                        students
+                                                    )}
+                                                </span>
+                                            )
+                                        )
+                                    ) : (
+                                        <span className={styles.emptyInlineText}>
+                                            없음
+                                        </span>
+                                    )}
+                                </div>
                             </section>
 
-                            <section className={styles.analysisSection}>
+                            <section data-reveal className={styles.analysisSection}>
                                 <h3>학생 분석 결과</h3>
                                 <p
                                     className={
