@@ -1,123 +1,54 @@
-.form {
-    margin-top: 42px;
-}
-
 .fieldList {
     display: flex;
     flex-direction: column;
-}
-
-.field {
-    padding: 28px 0;
-    border-bottom: 1px solid var(--color-border);
+    gap: 32px;
+    margin-top: 40px;
 }
 
 .fieldTitle {
     display: flex;
-    align-items: baseline;
+    align-items: center;
     gap: 10px;
-    font-size: var(--font-size-lg);
+    font-size: 18px;
     font-weight: var(--font-weight-bold);
 }
 
 .fieldIndex {
-    font-size: var(--font-size-sm);
+    font-size: 15px;
     font-weight: var(--font-weight-bold);
-    color: var(--color-primary-dark);
+    color: var(--color-primary-text);
 }
 
 .fieldDesc {
-    margin-top: 4px;
-    font-size: var(--font-size-sm);
-    font-weight: var(--font-weight-medium);
+    margin-top: 6px;
+    font-size: 15px;
+    line-height: 1.6;
     color: var(--color-text-secondary);
 }
 
-.field textarea {
-    margin-top: 16px;
+.textarea {
     width: 100%;
-    min-height: 120px;
-    padding: 14px 16px;
+    min-height: 132px;
+    margin-top: 12px;
+    padding: 16px;
     border: 1px solid var(--color-border);
-    border-radius: var(--border-radius-md);
-    background-color: #ffffff;
-    color: var(--color-text-primary);
+    border-radius: 12px;
     font-family: var(--font-family);
-    font-size: var(--font-size-md);
-    font-weight: var(--font-weight-medium);
-    line-height: 1.6;
-    resize: vertical;
-    transition: border-color var(--transition);
+    font-size: var(--font-size-lg);
+    line-height: 1.7;
+    color: var(--color-text-primary);
+    transition: border-color 0.15s ease;
 }
 
-.field textarea:focus {
-    outline: none;
-    border-color: var(--color-primary);
-}
-
-.field textarea::placeholder {
+.textarea::placeholder {
     color: var(--color-text-muted);
 }
 
-.submitArea {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    gap: 16px;
-    flex-wrap: wrap;
-    padding-top: 28px;
+.textarea:focus {
+    border-color: var(--color-primary);
 }
 
-.statusText {
-    font-size: var(--font-size-sm);
-    font-weight: var(--font-weight-medium);
-    color: var(--color-text-secondary);
-}
-
-.statusTextOk {
-    color: var(--color-primary-dark);
-    font-weight: var(--font-weight-bold);
-}
-
-.errorText {
-    margin: 0;
-    color: var(--color-danger);
-}
-
-.successText {
-    margin: 0;
-    color: var(--color-primary-dark);
-}
-
-.submitArea button {
-    padding: 14px 32px;
-    border: 1.5px solid var(--color-primary);
-    border-radius: var(--border-radius-md);
-    background-color: var(--color-primary);
-    color: #ffffff;
-    font-family: var(--font-family);
-    font-size: var(--font-size-lg);
-    font-weight: var(--font-weight-bold);
-    transition: background-color var(--transition);
-}
-
-.submitArea button:hover {
-    background-color: var(--color-primary-dark);
-}
-
-.submitArea button:disabled {
-    border-color: var(--color-border);
-    background-color: var(--color-border);
+.textarea:disabled {
+    background-color: var(--color-bg-secondary);
     cursor: not-allowed;
-}
-
-@media (max-width: 768px) {
-    .submitArea {
-        flex-direction: column;
-        align-items: stretch;
-    }
-
-    .submitArea button {
-        width: 100%;
-    }
 }

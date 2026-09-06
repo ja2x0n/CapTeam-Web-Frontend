@@ -1,88 +1,316 @@
 .page {
-    min-height: 100vh;
+    min-height: 100dvh;
     background-color: var(--color-bg);
 }
 
-.content {
-    max-width: 900px;
+.body {
+    max-width: var(--max-width);
+    min-height: calc(100dvh - var(--header-height));
     margin: 0 auto;
-    padding: 40px clamp(20px, 3vw, 40px) 64px;
+    padding: 0 var(--page-padding) 112px;
 }
 
-.pageHead {
-    display: flex;
-    align-items: baseline;
-    justify-content: space-between;
-    flex-wrap: wrap;
-    gap: 8px;
-    padding-bottom: 24px;
-    border-bottom: 1px solid var(--color-border);
+.inner {
+    max-width: 1240px;
+    margin: 0 auto;
 }
 
-.pageHead h1 {
-    margin: 0;
-    font-size: var(--font-size-2xl-sm);
+.layout {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) 300px;
+    gap: 56px;
+    padding-top: 48px;
+}
+
+.formColumn {
+    min-width: 0;
+}
+
+.eyebrow {
+    font-size: 15px;
+    font-weight: var(--font-weight-semibold);
+    color: var(--color-primary-text);
+}
+
+.formTitle {
+    margin-top: 8px;
+    font-size: 32px;
     font-weight: var(--font-weight-bold);
+    letter-spacing: -0.01em;
 }
 
-.hiddenTitle {
-    visibility: hidden;
-}
-
-.pageSub {
-    margin: 4px 0 0;
-    font-size: var(--font-size-sm);
-    font-weight: var(--font-weight-medium);
+.formSub {
+    margin-top: 12px;
+    font-size: 17px;
+    line-height: 1.6;
     color: var(--color-text-secondary);
 }
 
-.progressLine {
-    margin-top: 16px;
-    max-width: 420px;
+/* ── 작성 불가 / 팀 없음 안내 ────────────────────── */
+
+.noticeSection {
+    padding: 96px 0;
+}
+
+.headline {
+    margin-top: 12px;
+    font-size: 42px;
+    font-weight: var(--font-weight-bold);
+    line-height: 1.25;
+    letter-spacing: -0.01em;
+}
+
+.subline {
+    max-width: 32rem;
+    margin-top: 20px;
+    font-size: 19px;
+    line-height: 1.6;
+    color: var(--color-text-secondary);
+}
+
+.subline b {
+    font-weight: var(--font-weight-semibold);
+    color: var(--color-text-primary);
+}
+
+.noticeDetail {
+    margin-top: 24px;
+    padding-top: 24px;
+    border-top: 1px solid var(--color-border);
+    font-size: var(--font-size-lg);
+    line-height: 1.6;
+    color: var(--color-text-secondary);
+}
+
+.noticeActions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 12px;
+    margin-top: 36px;
+}
+
+.primaryButton {
+    height: 56px;
+    padding: 0 32px;
+    border: none;
+    border-radius: 8px;
+    background-color: var(--color-primary);
+    font-family: var(--font-family);
+    font-size: 17px;
+    font-weight: var(--font-weight-semibold);
+    color: #ffffff;
+    transition: background-color 0.15s ease, transform 0.1s ease;
+}
+
+.primaryButton:hover {
+    background-color: var(--color-primary-dark);
+}
+
+.primaryButton:active {
+    transform: scale(0.98);
+}
+
+.ghostButton {
+    height: 56px;
+    padding: 0 20px;
+    border: none;
+    border-radius: 8px;
+    background: none;
+    font-family: var(--font-family);
+    font-size: 15px;
+    font-weight: var(--font-weight-semibold);
+    color: var(--color-text-secondary);
+    transition: background-color 0.15s ease;
+}
+
+.ghostButton:hover {
+    background-color: var(--color-bg-secondary);
+}
+
+/* ── 상태 레일 ───────────────────────────────────── */
+
+.rail {
+    min-width: 0;
+}
+
+.railInner {
+    position: sticky;
+    top: calc(var(--header-height) + 32px);
+    padding-top: 28px;
+    border-top: 1px solid var(--color-border);
+}
+
+.railLabel {
+    font-size: var(--font-size-md);
+    font-weight: var(--font-weight-semibold);
+    color: var(--color-text-muted);
+}
+
+.countdown {
+    margin-top: 4px;
+    font-size: 36px;
+    font-weight: var(--font-weight-bold);
+    line-height: 1;
+    font-variant-numeric: tabular-nums;
+}
+
+.railNote {
+    margin-top: 8px;
+    font-size: var(--font-size-md);
+    color: var(--color-text-muted);
+}
+
+.progressBlock {
+    margin-top: 28px;
+}
+
+.progressHead {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    font-size: var(--font-size-md);
+}
+
+.progressLabel {
+    font-weight: var(--font-weight-semibold);
+}
+
+.progressValue {
+    font-weight: var(--font-weight-bold);
+    color: var(--color-primary-text);
 }
 
 .progressTrack {
-    height: 6px;
-    border-radius: 4px;
-    background: var(--color-bg-secondary);
+    height: 8px;
+    margin-top: 8px;
+    border-radius: 999px;
+    background-color: var(--color-bg-secondary);
     overflow: hidden;
 }
 
 .progressFill {
     height: 100%;
-    border-radius: 4px;
-    background: var(--color-primary);
-    transition: width 0.2s ease;
+    border-radius: 999px;
+    background-color: var(--color-primary);
+    transition: width 0.5s var(--ease-out);
 }
 
-.progressLabel {
-    margin: 8px 0 0;
-    font-size: var(--font-size-xs);
-    font-weight: var(--font-weight-semibold);
+.railMeta {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    margin-top: 28px;
+    padding-top: 24px;
+    border-top: 1px solid var(--color-border);
+    font-size: 15px;
+}
+
+.railRow {
+    display: flex;
+    justify-content: space-between;
+    gap: 12px;
+}
+
+.railRow span {
     color: var(--color-text-muted);
 }
 
-.progressLabel b {
-    color: var(--color-primary-dark);
-    font-weight: var(--font-weight-bold);
+.railRow strong {
+    min-width: 0;
+    overflow: hidden;
+    font-weight: var(--font-weight-semibold);
+    text-overflow: ellipsis;
+    white-space: nowrap;
 }
 
-.roleTag {
-    font-size: var(--font-size-xs);
-    font-weight: var(--font-weight-bold);
-    color: var(--color-primary-dark);
+.submitButton {
+    width: 100%;
+    height: 56px;
+    margin-top: 28px;
+    border: none;
+    border-radius: 8px;
+    background-color: var(--color-primary);
+    font-family: var(--font-family);
+    font-size: 17px;
+    font-weight: var(--font-weight-semibold);
+    color: #ffffff;
+    transition: background-color 0.15s ease, transform 0.1s ease;
 }
 
-.errorText {
-    margin: 20px 0 0;
-    color: var(--color-danger);
-    font-size: var(--font-size-sm);
+.submitButton:hover:not(:disabled) {
+    background-color: var(--color-primary-dark);
+}
+
+.submitButton:active:not(:disabled) {
+    transform: scale(0.98);
+}
+
+.submitButton:disabled {
+    background-color: var(--color-border);
+    color: var(--color-text-muted);
+    cursor: not-allowed;
+}
+
+.railHint {
+    margin-top: 12px;
+    font-size: var(--font-size-md);
+    line-height: 1.6;
+    color: var(--color-text-muted);
+}
+
+.railError {
+    margin-top: 12px;
+    font-size: var(--font-size-md);
     font-weight: var(--font-weight-semibold);
     line-height: 1.6;
+    color: var(--color-danger);
 }
 
-@media (max-width: 768px) {
-    .content {
-        padding: 32px 16px 56px;
+.railSuccess {
+    margin-top: 12px;
+    font-size: var(--font-size-md);
+    font-weight: var(--font-weight-semibold);
+    line-height: 1.6;
+    color: var(--color-primary-text);
+}
+
+/* ── 반응형 ───────────────────────────────────────── */
+
+@media (max-width: 1024px) {
+    .layout {
+        grid-template-columns: minmax(0, 1fr);
+        gap: 40px;
+    }
+
+    .railInner {
+        position: static;
+    }
+}
+
+@media (max-width: 900px) {
+    .body {
+        padding: 0 20px 80px;
+    }
+
+    .noticeSection {
+        padding: 56px 0;
+    }
+
+    .headline {
+        font-size: 30px;
+    }
+
+    .subline {
+        font-size: 17px;
+    }
+
+    .formTitle {
+        font-size: 26px;
+    }
+
+    .primaryButton,
+    .ghostButton {
+        flex: 1;
+        padding: 0 20px;
     }
 }

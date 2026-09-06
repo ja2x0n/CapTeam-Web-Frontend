@@ -1,142 +1,144 @@
 .page {
-    min-height: 100vh;
-    background-color: #ffffff;
+    min-height: 100dvh;
+    background-color: var(--color-bg);
 }
 
-.content {
-    width: min(1100px, 100%);
+.body {
+    max-width: var(--max-width);
+    min-height: calc(100dvh - var(--header-height));
     margin: 0 auto;
-    padding: 92px 24px 120px;
+    padding: 0 var(--page-padding) 112px;
 }
 
-.countdownSection {
-    display: flex;
-    align-items: center;
-    flex-direction: column;
-    justify-content: center;
-    min-height: 520px;
-    text-align: center;
+.inner {
+    max-width: 1240px;
+    margin: 0 auto;
+    padding: 96px 0;
 }
 
 .eyebrow {
-    margin-bottom: 18px;
-    color: var(--color-primary-dark);
-    font-size: var(--font-size-md);
-    font-weight: var(--font-weight-bold);
-}
-
-.countdownSection h1 {
-    margin: 0;
-    color: #000000;
-    font-size: 34px;
-    font-weight: var(--font-weight-bold);
-    line-height: 1.35;
-}
-
-.timerArea {
-    display: flex;
-    align-items: baseline;
-    justify-content: center;
-    gap: 24px;
-    margin-top: 54px;
-}
-
-.timerArea strong {
-    color: var(--color-primary);
-    font-size: 64px;
-    font-weight: var(--font-weight-bold);
-    letter-spacing: 0;
-}
-
-.timerArea span {
-    color: #000000;
-    font-size: var(--font-size-2xl);
-    font-weight: var(--font-weight-bold);
-}
-
-.description {
-    max-width: 520px;
-    margin: 30px 0 0;
-    color: var(--color-text-secondary);
-    font-size: var(--font-size-md);
+    font-size: 15px;
     font-weight: var(--font-weight-semibold);
-    line-height: 1.7;
+    color: var(--color-primary-text);
 }
 
-.actionGroup {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    gap: 14px;
-    margin-top: 64px;
-}
-
-.actionButton {
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    width: 260px;
-    height: 54px;
-    border: 1px solid var(--color-primary);
-    border-radius: var(--border-radius-sm);
-    background-color: var(--color-primary);
-    color: #ffffff;
-    font-size: var(--font-size-md);
+.headline {
+    margin-top: 12px;
+    font-size: 42px;
     font-weight: var(--font-weight-bold);
-    text-decoration: none;
-    transition: background-color var(--transition),
-        border-color var(--transition);
+    line-height: 1.25;
+    letter-spacing: -0.01em;
 }
 
-.actionButton:hover {
-    border-color: var(--color-primary-dark);
-    background-color: var(--color-primary-dark);
+.subline {
+    max-width: 32rem;
+    margin-top: 20px;
+    font-size: 19px;
+    line-height: 1.6;
+    color: var(--color-text-secondary);
 }
 
-.secondaryButton {
-    border-color: var(--color-border);
-    background-color: #ffffff;
+.subline b {
+    font-weight: var(--font-weight-semibold);
     color: var(--color-text-primary);
 }
 
-.secondaryButton:hover {
-    border-color: var(--color-text-secondary);
-    background-color: var(--color-text-secondary);
-    color: #ffffff;
+.timerBlock {
+    margin-top: 40px;
+    padding-top: 32px;
+    border-top: 1px solid var(--color-border);
 }
 
-@media (max-width: 768px) {
-    .content {
-        padding: 54px 16px 80px;
+.timerLabel {
+    font-size: 15px;
+    font-weight: var(--font-weight-semibold);
+    color: var(--color-text-muted);
+}
+
+.countdown {
+    margin-top: 4px;
+    font-size: 56px;
+    font-weight: var(--font-weight-bold);
+    line-height: 1;
+    font-variant-numeric: tabular-nums;
+}
+
+.timerNote {
+    margin-top: 16px;
+    font-size: var(--font-size-lg);
+    line-height: 1.6;
+    color: var(--color-text-secondary);
+}
+
+.actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 12px;
+    margin-top: 36px;
+}
+
+.primaryButton {
+    display: inline-flex;
+    align-items: center;
+    height: 56px;
+    padding: 0 32px;
+    border-radius: 8px;
+    background-color: var(--color-primary);
+    font-size: 17px;
+    font-weight: var(--font-weight-semibold);
+    color: #ffffff;
+    transition: background-color 0.15s ease, transform 0.1s ease;
+}
+
+.primaryButton:hover {
+    background-color: var(--color-primary-dark);
+}
+
+.primaryButton:active {
+    transform: scale(0.98);
+}
+
+.ghostButton {
+    display: inline-flex;
+    align-items: center;
+    height: 56px;
+    padding: 0 20px;
+    border-radius: 8px;
+    font-size: 15px;
+    font-weight: var(--font-weight-semibold);
+    color: var(--color-text-secondary);
+    transition: background-color 0.15s ease;
+}
+
+.ghostButton:hover {
+    background-color: var(--color-bg-secondary);
+}
+
+@media (max-width: 900px) {
+    .body {
+        padding: 0 20px 80px;
     }
 
-    .countdownSection {
-        min-height: 440px;
+    .inner {
+        padding: 56px 0;
     }
 
-    .countdownSection h1 {
-        font-size: var(--font-size-2xl);
+    .headline {
+        font-size: 30px;
     }
 
-    .timerArea {
-        align-items: center;
-        flex-direction: column;
-        gap: 12px;
-        margin-top: 42px;
+    .subline {
+        font-size: 17px;
     }
 
-    .timerArea strong {
-        font-size: 42px;
+    .countdown {
+        font-size: 40px;
     }
 
-    .actionButton {
-        width: 100%;
-        max-width: 280px;
-    }
-
-    .actionGroup {
-        flex-direction: column;
-        width: 100%;
-        margin-top: 46px;
+    .primaryButton,
+    .ghostButton {
+        flex: 1;
+        justify-content: center;
+        padding: 0 20px;
     }
 }
