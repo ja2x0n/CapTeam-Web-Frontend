@@ -60,24 +60,30 @@
     color: var(--color-text-primary);
 }
 
+/* 밑줄 한 줄만 두고, 포커스되면 그 줄이 민트로 바뀐다 */
 .form input {
     width: 100%;
-    padding: 13px 14px;
-    border: 1px solid var(--color-border);
-    border-radius: var(--border-radius-md);
-    font-size: var(--font-size-md);
+    padding: 10px 2px;
+    border: none;
+    border-bottom: 1px solid var(--color-border);
+    border-radius: 0;
+    font-size: var(--font-size-lg);
     font-weight: var(--font-weight-medium);
     color: var(--color-text-primary);
-    background-color: var(--color-bg);
+    background-color: transparent;
+    transition: border-color 0.15s ease;
 }
 
 .form input::placeholder {
     color: var(--color-text-muted);
-    font-size: var(--font-size-sm);
+    font-size: var(--font-size-md);
 }
 
 .form input:focus {
-    border-color: var(--color-primary);
+    border-bottom-color: var(--color-primary);
+    border-bottom-width: 2px;
+    /* 선이 굵어지는 만큼 아래 여백을 줄여 글자가 움직이지 않게 */
+    padding-bottom: 9px;
 }
 
 .error {
